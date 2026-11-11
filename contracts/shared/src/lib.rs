@@ -1,4 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::json_types::U128;
 use near_sdk::AccountId;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -20,7 +21,7 @@ pub struct Offer {
     pub offer_id: OfferId,
     pub item_id: String,
     pub seller: AccountId,
-    pub price: u128,
+    pub price: U128,
     pub delivery_days: u16,
     pub expires_at_block: u64,
     pub metadata_hash: [u8; 32],
@@ -31,7 +32,7 @@ pub struct Policy {
     pub price_weight: u32,
     pub delivery_weight: u32,
     pub reputation_weight: u32,
-    pub max_price: u128,
+    pub max_price: U128,
     pub min_delivery_days: u16,
     pub excluded_sellers: Vec<AccountId>,
 }
@@ -58,7 +59,7 @@ pub struct PurchaseReceipt {
     pub offer_id: OfferId,
     pub buyer: AccountId,
     pub seller: AccountId,
-    pub amount: u128,
+    pub amount: U128,
     pub block_height: u64,
     pub caller: AccountId,
 }
@@ -121,20 +122,20 @@ pub fn valid_policy(policy: &Policy) -> bool {
         + policy.delivery_weight as u64
         + policy.reputation_weight as u64;
     weight_sum > 0
-        && policy.max_price > 0
-        && policy.max_price.is_multiple_of(PRICE_UNIT_YOCTO)
+        && policy.max_price.0 > 0
+        && policy.max_price.0.is_multiple_of(PRICE_UNIT_YOCTO)
         && policy.min_delivery_days <= MAX_DELIVERY_DAYS
 }
 
 pub fn offer_is_valid(offer: &Offer, policy: &Policy, quote_block: u64) -> bool {
     offer.expires_at_block > quote_block
-        && offer.price <= policy.max_price
+        && offer.price.0 <= policy.max_price.0
         && offer.delivery_days >= policy.min_delivery_days
         && !policy.excluded_sellers.contains(&offer.seller)
 }
 
 pub fn score(offer: &Offer, policy: &Policy, sales: u64) -> Option<u128> {
-    let price_units = offer.price / PRICE_SCORE_UNIT_YOCTO;
+    let price_units = offer.price.0 / PRICE_SCORE_UNIT_YOCTO;
     let price_term = (policy.price_weight as u128).checked_mul(price_units)?;
     let delivery_term =
         (policy.delivery_weight as u128).checked_mul(offer.delivery_days as u128)?;
@@ -154,7 +155,7 @@ pub fn rank_offers(offers: &[(Offer, u64)], policy: &Policy, quote_block: u64) -
             score(offer, policy, *sales).map(|score| RankedOffer {
                 offer_id: offer.offer_id,
                 score,
-                price: offer.price,
+                price: offer.price.0,
                 delivery_days: offer.delivery_days,
             })
         })
@@ -182,7 +183,7 @@ mod tests {
             offer_id: id,
             item_id: "gpu-hour".to_string(),
             seller: account(seller),
-            price: price_near * NEAR_YOCTO,
+            price: U128(price_near * NEAR_YOCTO),
             delivery_days,
             expires_at_block: 1_000,
             metadata_hash: [0u8; 32],
@@ -194,7 +195,7 @@ mod tests {
             price_weight: 60,
             delivery_weight: 20,
             reputation_weight: 20,
-            max_price: 15 * NEAR_YOCTO,
+            max_price: U128(15 * NEAR_YOCTO),
             min_delivery_days: 1,
             excluded_sellers: vec![account("excluded.testnet")],
         }
@@ -271,7 +272,7 @@ mod tests {
     fn offer_hash_changes_when_a_field_changes() {
         let o = offer(1, "honest-a.testnet", 10, 2);
         let mut changed = o.clone();
-        changed.price += PRICE_UNIT_YOCTO;
+        changed.price = U128(changed.price.0 + PRICE_UNIT_YOCTO);
         assert_ne!(offer_hash(&o), offer_hash(&changed));
     }
 
