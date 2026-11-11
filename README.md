@@ -1,6 +1,6 @@
 # Loyal Cart
 
-**Status: CP1 spec freeze. Contracts are stubs; no testnet deployment yet.** The claims ledger (`CLAIMS.md`) marks every system claim PLANNED until it is verified. The fixture verifier and arena already run (see Quickstart); nothing here is evidence of a live deployment.
+**Status: CP2 in progress. The three contracts are implemented and pass unit tests plus a local near-workspaces integration test: quote creation, winner checkout, non-winner refusal, and kickback forwarding. No testnet deployment yet.** The claims ledger (`CLAIMS.md`) marks every system claim with its evidence status. The fixture verifier and arena run; the sandbox integration test runs after `make build-wasm`.
 
 A shopping agent whose checkout cannot pay a non-winner. The checkout forwards the buyer's funds to the seller only if the offer being bought is the best in a public on-chain offer book under the user's committed scoring. Any on-chain transfer to the agent is forwarded to the user. Off-chain bribes to the agent's operator are out of scope.
 
@@ -33,17 +33,18 @@ See `SPEC.md` for the interfaces, schemas, scoring, threat model, arena script a
 
 ---
 
-## Quickstart (CP1: fixture paths work; contracts are stubs)
+## Quickstart (CP2: unit tests + local sandbox; testnet pending)
 
 These run on a clean clone with no wallet, no funds and no paid keys:
 
 ```sh
-make test      # Rust workspace + Node verifier/arena tests
-make verify    # dependency-free verifier on the committed quote fixture
-make arena     # deterministic Bribe Arena fixture
+make test             # Rust workspace + Node verifier/arena tests
+make verify           # dependency-free verifier on the committed quote fixture
+make arena            # deterministic Bribe Arena fixture
+make test-integration # builds wasm, then runs the near-workspaces sandbox flow
 ```
 
-The contracts are stubs at CP1; testnet deployment is CP2. The verifier and arena prove the shared scoring/hashing logic and the attack model, not a live deployment. Check `CLAIMS.md` for what is actually verified.
+`make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. Testnet deployment is still pending.
 
 ---
 
@@ -95,7 +96,7 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation.
 - **RPC and external services.** Testnet, the RPC and 1Click are external dependencies; a recorded artifact is a recording, not a live run.
 - **1Click dry quotes.** The testnet demo shows a quote, not a mainnet execution.
-- **Almost nothing is verified yet.** At CP1 the contracts are stubs; the only working code is the shared scoring/hashing and the fixture verifier/arena.
+- **Almost nothing is verified on testnet yet.** The contracts are implemented and pass a local near-workspaces sandbox flow, but there is no testnet deployment, no real refused tx and no real forwarded tx in this README.
 
 The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 
