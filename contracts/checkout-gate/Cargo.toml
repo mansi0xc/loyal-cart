@@ -1,0 +1,16 @@
+[package]
+name = "loyal-cart-checkout-gate"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Proof-gated checkout for Loyal Cart"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk.workspace = true
+loyal-cart-shared = { path = "../shared" }
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

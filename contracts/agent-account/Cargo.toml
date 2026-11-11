@@ -1,0 +1,16 @@
+[package]
+name = "loyal-cart-agent-account"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Scoped agent budget account with kickback forwarding for Loyal Cart"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk.workspace = true
+loyal-cart-shared = { path = "../shared" }
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

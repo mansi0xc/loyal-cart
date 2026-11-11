@@ -1,0 +1,16 @@
+[package]
+name = "loyal-cart-shared"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared types, scoring and canonical hashing for Loyal Cart"
+
+[dependencies]
+near-sdk.workspace = true
+borsh.workspace = true
+serde.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
