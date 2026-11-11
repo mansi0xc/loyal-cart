@@ -1,0 +1,15 @@
+{
+  "name": "loyal-cart",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A shopping agent that cannot take a bribe",
+  "scripts": {
+    "verify": "node packages/verifier/verify.mjs --fixture fixtures/arena.json",
+    "arena": "node packages/arena/arena.mjs --fixture fixtures/arena.json",
+    "test": "node --test packages/verifier/test/*.test.mjs packages/arena/test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
