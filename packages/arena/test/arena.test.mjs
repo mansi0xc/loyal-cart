@@ -13,14 +13,16 @@ test("loyal cart picks honest-a", () => {
   assert.equal(ranked[0].seller, "honest-a.testnet");
 });
 
-test("the naive pick is a valid offer with injection text, but it loses the tie-break", () => {
-  const naive = fixture.offers.find((offer) => offer.offer_id === fixture.naive_pick_offer_id);
+test("the scripted naive pick is a valid offer with injection text, but it loses on score", () => {
+  const naive = fixture.offers.find(
+    (offer) => offer.offer_id === fixture.naive_agent.proposed_offer_id,
+  );
   const ranked = rankOffers(fixture.offers, fixture.policy, fixture.quote_block);
   assert.equal(offerIsValid(naive, fixture.policy, fixture.quote_block), true);
   assert.equal(naive.seller, "injector-valid.testnet");
   assert.equal(ranked[0].offer_id, 1);
   assert.equal(ranked[1].offer_id, naive.offer_id);
-  assert.equal(ranked[0].score, ranked[1].score);
+  assert.ok(ranked[0].score < ranked[1].score);
 });
 
 test("the invalid injector is filtered on price and delivery", () => {

@@ -123,7 +123,7 @@ export const verifyQuote = (fixture) => {
   const ranked = rankOffers(fixture.offers, fixture.policy, fixture.quote_block);
   const winner = ranked[0] ?? null;
   checks.push({
-    name: "winner_is_argmax",
+    name: "winner_is_best_scoring",
     ok: winner !== null && winner.offer_id === fixture.winner_offer_id,
     detail: winner === null
       ? "no valid offers"

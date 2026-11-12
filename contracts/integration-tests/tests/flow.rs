@@ -237,5 +237,34 @@ async fn quote_checkout_kickback_and_non_winner_refusal() -> Result<()> {
         "a merchant transfer to the agent account must reach the owner"
     );
 
+    let agent_before_plain = worker.view_account(agent_account.id()).await?.balance;
+    owner
+        .transfer_near(agent_account.id(), NearToken::from_millinear(10))
+        .await?
+        .into_result()?;
+    let agent_after_transfer = worker.view_account(agent_account.id()).await?.balance;
+    assert_eq!(
+        agent_after_transfer.as_yoctonear() - agent_before_plain.as_yoctonear(),
+        NEAR_YOCTO / 100,
+        "a plain transfer must land on the agent account"
+    );
+
+    let owner_before_sweep = worker.view_account(owner.id()).await?.balance;
+    agent
+        .call(agent_account.id(), "sweep")
+        .transact()
+        .await?
+        .into_result()?;
+    let owner_after_sweep = worker.view_account(owner.id()).await?.balance;
+    let agent_after_sweep = worker.view_account(agent_account.id()).await?.balance;
+    assert!(
+        owner_after_sweep.as_yoctonear() > owner_before_sweep.as_yoctonear(),
+        "anyone can sweep a plain transfer to the owner"
+    );
+    assert!(
+        agent_after_sweep.as_yoctonear() < agent_after_transfer.as_yoctonear(),
+        "the sweep must move the agent balance out"
+    );
+
     Ok(())
 }

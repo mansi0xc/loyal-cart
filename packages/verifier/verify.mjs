@@ -48,7 +48,7 @@ if (result.filtered.length > 0) {
 console.log("");
 console.log(
   result.ok
-    ? "OVERALL: PASS — the quote is valid and the chosen offer is the argmax."
+    ? "OVERALL: PASS — the quote is valid and the chosen offer is the best-scoring (lowest cost)."
     : "OVERALL: FAIL — do not settle this purchase.",
 );
 

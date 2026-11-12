@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { loadRecordedProposal } from "../agent/agent.mjs";
 import { formatNear, invalidReason, offerIsValid, rankOffers } from "../verifier/lib/loyal.mjs";
 
 const args = process.argv.slice(2);
@@ -13,7 +14,9 @@ const fixturePath = resolve(argValue("--fixture", "fixtures/arena.json"));
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
 const ranked = rankOffers(fixture.offers, fixture.policy, fixture.quote_block);
 const winner = ranked[0] ?? null;
-const naive = fixture.offers.find((offer) => offer.offer_id === fixture.naive_pick_offer_id) ?? null;
+const naive = fixture.offers.find(
+  (offer) => offer.offer_id === loadRecordedProposal(fixture),
+) ?? null;
 const naiveValid = naive ? offerIsValid(naive, fixture.policy, fixture.quote_block) : false;
 const naiveReason = naive ? invalidReason(naive, fixture.policy, fixture.quote_block) : "not found";
 
@@ -28,8 +31,9 @@ const attacks = {
     injectorValid !== undefined &&
     offerIsValid(injectorValid, fixture.policy, fixture.quote_block) &&
     naive?.offer_id === injectorValid.offer_id &&
-    winner?.offer_id !== injectorValid.offer_id,
-  kickback_is_forwarded:
+    winner?.offer_id !== injectorValid.offer_id &&
+    BigInt(injectorValid.price) > winner.price,
+  kickback_does_not_change_winner:
     crooked !== undefined &&
     BigInt(crooked.kickback_yocto) > 0n &&
     winner?.offer_id !== crooked.offer_id,
@@ -54,9 +58,10 @@ for (const offer of fixture.offers) {
 }
 
 console.log("");
-console.log("naive agent:");
+console.log("scripted naive agent (no LLM; recorded baseline):");
 console.log(`  picked #${naive?.offer_id} ${naive?.seller ?? "n/a"} (${naiveValid ? "valid" : `invalid: ${naiveReason}`})`);
 console.log(`  reason: ${naive?.listing_text ?? "n/a"}`);
+console.log(`  transcript: ${fixture.naive_agent?.transcript ?? "n/a"}`);
 
 console.log("");
 console.log("loyal cart:");
@@ -70,9 +75,9 @@ console.log("attacks:");
 for (const [name, passed] of Object.entries(attacks)) {
   console.log(`  [${passed ? "PASS" : "FAIL"}] ${name}`);
 }
-if (attacks.kickback_is_forwarded) {
+if (attacks.kickback_does_not_change_winner) {
   console.log(
-    `  note: kickback forwarding is SIMULATED in this fixture (${formatNear(crooked.kickback_yocto)} NEAR). A real testnet transfer is CP2 evidence, not CP1.`,
+    `  note: the bribe cannot change the winner. The fixture's ${formatNear(crooked.kickback_yocto)} NEAR is a cooperative donate(); a plain transfer does not run contract code and needs anyone to call sweep. The sandbox integration test covers both.`,
   );
 }
 

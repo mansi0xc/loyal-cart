@@ -120,7 +120,7 @@ spending for user confirmation." It escalates; it does not decide.
 aimed at, but it closes a different one. A-VIP binds the cart to *the listing the user was shown*. It
 takes the displayed listing as ground truth and detects drift from it. It never asks whether the shown
 listing was the best one available. Loyal Cart's `NotWinner` refusal binds the purchase to a computed
-argmax over a committed set, which is a strictly different condition: a cart that matches the listing
+best-scoring (lowest cost) over a committed set, which is a strictly different condition: a cart that matches the listing
 exactly still reverts if that listing was not the winner. Say this precisely and the citation helps;
 say "A-VIP names our gap" without the distinction and it reads as though Loyal Cart is a variant of
 A-VIP.
@@ -139,7 +139,7 @@ nonce and signature before paying, with named refusals (`receiver_not_allowliste
 `over_per_action_cap`). **Covers:** who the agent may pay and how much. **Not Loyal Cart:** it gates
 the payee and the amount, not the choice between N competing offers. Its Ferry shop does mark the
 larger-output quote `best rate`, but via an off-chain `pickBest` in the client, with no committed
-policy and no argmax over an on-chain book. Worth noting: nearcarta is *stronger* than Loyal Cart on
+policy and no best-scoring (lowest cost) over an on-chain book. Worth noting: nearcarta is *stronger* than Loyal Cart on
 deployment evidence (mainnet, real tx hashes, no access key on the board) and should not be
 caricatured as a mere spend limit.
 
@@ -191,7 +191,7 @@ idea invites the obvious rebuttal.
 `github.com/TimmMu/tee-confidential-auctions`). Its shape: bidders commit funds to enclave-controlled
 escrow, "the confidential blockchain determines the winner through verifiable off-chain computation
 and issues signed settlement transactions for execution on the public chain", and "the resulting
-outcome [is] enforced on-chain." **Covers:** argmax over a committed set, with on-chain enforcement of
+outcome [is] enforced on-chain." **Covers:** best-scoring (lowest cost) over a committed set, with on-chain enforcement of
 settlement. **Not Loyal Cart:** auction domain and seller-side price competition; the "policy" is the
 auction rule (highest bid), not a buyer-authored, hash-committed scoring policy with weights,
 exclusions and a reputation term; bids are sealed, so it needs TEE hardware trust, whereas Loyal Cart's
@@ -228,16 +228,16 @@ Recorded here because the lead will otherwise carry them into the README:
 |---|---|---|---|---|---|
 | **NorthCinder** | MCP server; open deterministic `rankOffers`; client re-runs and diffs (`verifySearchRanking`); sponsored offers forced into a lower tier; single-use signed mandate at checkout | Re-execution over **disclosed** inputs; no chain, no hardware | That the order, scores and reasons equal what the open ranker produces **given the inputs the service disclosed** | That the disclosed inputs are honest, or that the offer set is complete — stated as out of scope in its own spec; no settlement gate; no agent account, so no kickback surface | Loyal Cart removes the "disclosed inputs" qualifier for the offer set (public contract index, hashed into the quote) and makes the ranking a **payment condition** in a contract, not a check inside the buyer's process |
 | **CheckMate** | 10 agents propose; deterministic policy engine returns PASS/FAIL/UNKNOWN; hashed versioned plan; HMAC-signed approval required before a PayPal order | Operator-held **symmetric** HMAC key; trust the operator's server | That the operator's server acted only on a plan it signed, and that neither plan nor audit chain was edited after signing | That the operator ranked honestly, did not curate offers, or favoured a merchant; third-party verification at all (symmetric key); no chain; real-store purchases are self-reported | Loyal Cart's check is public and asymmetric in effect: anyone recomputes the winner from chain data with no key and no permission |
-| **A-VIP (2609.11757)** | Binds credential lookup to session and cart line to the listing seen; flags unauthorised spend | AP2 credential infrastructure | That the cart matches the listing the user was shown | That the listing was the best available; the third attack leaves no trace and is escalated to the user for confirmation | Loyal Cart binds to an argmax over a committed offer set, so a cart that matches its listing exactly still reverts if the listing was not the winner |
-| **nearcarta** | On-chain charter board: allowlist, caps, budget, count, window, expiry, nonce, signature checked before a yoctoNEAR moves | NEAR contract; agent holds a scoped function-call key; board has no access key | That the payment went to an allowed payee within the user's caps | That the agent chose the best offer; no offer book, no committed scoring, no argmax | Loyal Cart gates *which* offer, not just *whom* and *how much*. nearcarta is stronger on deployment evidence (mainnet, real tx) |
+| **A-VIP (2609.11757)** | Binds credential lookup to session and cart line to the listing seen; flags unauthorised spend | AP2 credential infrastructure | That the cart matches the listing the user was shown | That the listing was the best available; the third attack leaves no trace and is escalated to the user for confirmation | Loyal Cart binds to an best-scoring (lowest cost) over a committed offer set, so a cart that matches its listing exactly still reverts if the listing was not the winner |
+| **nearcarta** | On-chain charter board: allowlist, caps, budget, count, window, expiry, nonce, signature checked before a yoctoNEAR moves | NEAR contract; agent holds a scoped function-call key; board has no access key | That the payment went to an allowed payee within the user's caps | That the agent chose the best offer; no offer book, no committed scoring, no best-scoring (lowest cost) | Loyal Cart gates *which* offer, not just *whom* and *how much*. nearcarta is stronger on deployment evidence (mainnet, real tx) |
 | **Flock** | Pooled demand → commit/reveal sealed-bid reverse auction; second-price; offer-hiding slashed; browser recomputes every settled round | NEAR contract + bond; re-execution in the browser | That settlement followed the auction rule over the revealed offers | Any buyer-authored scoring policy; multi-dimensional offers; anything about the buyer's own agent | Loyal Cart's ranking is the buyer's policy, not a fixed auction rule; its adversary is the agent, not the seller |
 | **CartelBreaker** | Bonded procurement auction; bids at/above `cost_index + markup_limit` flagged and slashed on-chain | NEAR contract + a trusted cost oracle | That supra-competitive bids were detected and punished | Anything buyer-side; the oracle is a trust assumption it names itself | Orthogonal. CartelBreaker constrains sellers, Loyal Cart constrains the agent. They compose |
 | **AP2** | Signed mandates (intent / cart / payment) as authorisation credentials | Credential issuer + protocol | That this payment was authorised for this cart by this user | That the decision behind the cart was sound — the gap A-VIP measures at 56–90% attack success | Loyal Cart adds the missing decision check and puts it in the settlement path |
 | **Mastercard Verifiable Intent** | Layered SD-JWT delegation chain binding agent action to human-approved scope | Issuer-anchored credential chain | That the agent acted inside the scope the human approved | That the offer chosen inside that scope was the best one | Same envelope-vs-choice distinction: scope is a permission, not a ranking |
 | **Visa TAP** | RFC 9421 signed HTTP headers; agent identity verified against a Visa-run directory | Visa-operated directory; issuer trust | That the caller is a legitimate, accountable agent authorised for that action | Anything about the buyer's interest; merchant-facing by design | Loyal Cart is buyer-facing and proves a choice, not an identity |
 | **MEV-Share / MEV Blocker** | Order-flow auction; third-party payments for user flow rebated to the user (90% of backrun bundles; 50% of builder fees to wallet originators) | Auction operator + searcher honesty | That a rebate was paid to the flow originator | Any choice, any agent, any proof; no non-retention guarantee, only a payout policy | Loyal Cart's non-retention is structural — the agent account has no method that pays the agent — where MEV rebates are a policy of the operator. Loyal Cart must credit this as the ancestor of the idea |
-| **TEE sealed-bid auctions (DeFi '25)** | Bids escrowed to enclave addresses; enclave computes the winner; signed settlement txs enforced on a public chain | **TEE hardware** + confidential-compute chain | That the winner is the argmax of the committed bid set, enforced at settlement | A buyer-authored scoring policy; multi-dimensional offers; freedom from hardware trust; public recomputation | Loyal Cart gets the same "argmax gates release" shape with **no TEE**, because its offers are public — the winner is recomputable in plain Node. Its policy is buyer-authored, not a fixed auction rule |
-| **Loyal Cart** | Public on-chain offer book; `create_quote` snapshots every valid offer from the book's own index and stores `policy_hash` + per-offer hashes; `CheckoutGate.execute` refuses unless the offer is the stored winner and hashes match; `AgentAccount` forwards inflows to the owner | NEAR contracts; the OfferBook code is the trust assumption; no TEE, no oracle, no TEE-attested hardware | That the purchase is the argmax of the on-chain offer book under the policy the quote committed to — recheckable by any third party with no wallet | That the offers are competitive or truthful; that unposted offers exist; that the policy is good; that an off-chain side payment was not made; that the deployer cannot upgrade | — |
+| **TEE sealed-bid auctions (DeFi '25)** | Bids escrowed to enclave addresses; enclave computes the winner; signed settlement txs enforced on a public chain | **TEE hardware** + confidential-compute chain | That the winner is the best-scoring (lowest cost) of the committed bid set, enforced at settlement | A buyer-authored scoring policy; multi-dimensional offers; freedom from hardware trust; public recomputation | Loyal Cart gets the same "best-scoring (lowest cost) gates release" shape with **no TEE**, because its offers are public — the winner is recomputable in plain Node. Its policy is buyer-authored, not a fixed auction rule |
+| **Loyal Cart** | Public on-chain offer book; `create_quote` snapshots every valid offer from the book's own index and stores `policy_hash` + per-offer hashes; `CheckoutGate.execute` refuses unless the offer is the stored winner and hashes match; `AgentAccount` forwards inflows to the owner | NEAR contracts; the OfferBook code is the trust assumption; no TEE, no oracle, no TEE-attested hardware | That the purchase is the best-scoring (lowest cost) of the on-chain offer book under the policy the quote committed to — recheckable by any third party with no wallet | That the offers are competitive or truthful; that unposted offers exist; that the policy is good; that an off-chain side payment was not made; that the deployer cannot upgrade | — |
 
 ---
 
@@ -253,7 +253,7 @@ C13 as currently worded:
 1. **"The first"** is a negative existential claim. Nothing in `CLAIMS.md`'s named evidence
    ("related-work section; prior-art search; Claude review") is an artifact a stranger can reproduce,
    so C13 can never reach VERIFIED under the ledger's own rule. And the mechanism half of it —
-   *argmax over a committed set gates on-chain release* — is published, peer-reviewed and implemented
+   *best-scoring (lowest cost) over a committed set gates on-chain release* — is published, peer-reviewed and implemented
    (DeFi '25, §4 above).
 2. **"On-chain proof"** invites a zero-knowledge reading. What exists is deterministic on-chain
    computation plus a re-executable verifier. That is genuinely verifiable and worth saying plainly —
@@ -270,7 +270,7 @@ arena. "Shopping agent" is a category the prototype has not yet earned.
 **Recommended replacement (L1 — the narrowest claim that the evidence can actually carry):**
 
 > "Loyal Cart is a testnet prototype in which the payment contract will not forward the buyer's funds
-> unless the offer being bought is the argmax of every valid offer in a public on-chain offer book,
+> unless the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book,
 > under the scoring policy the quote hash-committed — so a third party can recheck the choice from
 > chain data alone, with no key and no hardware trust — and the agent's own account has no method that
 > can pay the agent or a third party."
@@ -287,7 +287,7 @@ does not belong in a one-sentence claim that one counterexample destroys.
 
 ## 8. Fallback if L1 is challenged
 
-**L2 — challenge: "argmax gates payment is not new; sealed-bid auctions already do it."**
+**L2 — challenge: "best-scoring (lowest cost) gates payment is not new; sealed-bid auctions already do it."**
 Concede the mechanism and move the claim to the domain:
 
 > "A shopping checkout in which the offer set is a public contract index rather than a service's own
@@ -295,7 +295,7 @@ Concede the mechanism and move the claim to the domain:
 
 This is the sharpest remaining delta against NorthCinder specifically, because NorthCinder's own spec
 names curated inputs as the thing client-side verification cannot catch. It is a claim about where the
-offer set lives and what the payment is bound to — not about inventing argmax-plus-escrow.
+offer set lives and what the payment is bound to — not about inventing best-scoring (lowest cost)-plus-escrow.
 
 **L3 — challenge: "both mechanisms exist separately, the combination is engineering."**
 Concede the combination and drop the comparatives:
@@ -303,7 +303,7 @@ Concede the combination and drop the comparatives:
 > "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or
 > sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by authorisation
 > credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase
-> that is not the argmax of the on-chain offer book under the committed policy."
+> that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
 
 L3 makes no originality claim at all. It states a mechanism and names the neighbours it differs from.
 It is unfalsifiable in the way that matters — nothing in it can be shown false — and it is still a

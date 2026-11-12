@@ -2,17 +2,19 @@
 
 **Status: CP2 in progress. The three contracts are implemented and pass unit tests plus a local near-workspaces integration test: quote creation, winner checkout, non-winner refusal, and kickback forwarding. No testnet deployment yet.** The claims ledger (`CLAIMS.md`) marks every system claim with its evidence status. The fixture verifier and arena run; the sandbox integration test runs after `make build-wasm`.
 
-A shopping agent whose checkout cannot pay a non-winner. The checkout forwards the buyer's funds to the seller only if the offer being bought is the best in a public on-chain offer book under the user's committed scoring. Any on-chain transfer to the agent is forwarded to the user. Off-chain bribes to the agent's operator are out of scope.
+Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
+
+For a company, the procurement lead commits the policy; the employee or agent who shops cannot tailor the scoring after seeing the offers. Off-chain bribes to the agent's operator are out of scope.
 
 The honest claim ladder (only use the highest rung whose ledger rows are VERIFIED/ATTESTED):
 
-> **L1 — mechanism.** "A testnet prototype in which the payment contract forwards the buyer's funds to the seller only if the offer being bought is the argmax of every valid offer in a public on-chain offer book, under the scoring policy committed in the quote — so a third party can recheck the choice from chain data alone, with no key and no hardware trust — and the agent's own account has no method that can pay the agent or a third party."
+> **L1 — mechanism.** "A testnet prototype in which the payment contract forwards the buyer's funds to the seller only if the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book, under the scoring policy committed in the quote — so a third party can recheck the choice from chain data alone, with no key and no hardware trust — and the agent's own account has no method that can pay the agent or a third party."
 >
-> **L3 — no originality claim.** "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by an authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the argmax of the on-chain offer book under the committed policy."
+> **L3 — no originality claim.** "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by an authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
 
-We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on an argmax over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
+We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on a best-scoring rule over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
 
-Tracks: **swarms**, **realworld**, **open**.
+Tracks: **realworld**, **business**, **swarms**, **open**. The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
 
 ---
 
@@ -27,7 +29,7 @@ AI shopping agents are starting to spend real money. The agent's operator, the m
 3. **Quote snapshot.** The offer book snapshots every valid offer for the item from its own index, up to 64; above the cap it panics rather than truncating. The agent cannot pass an arbitrary list or swap the policy.
 4. **Proof-gated checkout.** The checkout contract forwards the buyer's attached deposit to the seller only if the chosen offer is the quote's winner and the offer hash matches. Any other choice reverts.
 5. **Forwarding account.** Any NEAR sent to the agent account through `donate` is forwarded to the owner; a plain transfer can be swept to the owner by anyone. The agent has no method that pays the agent or a third party. NEP-141 plain transfers are not forwarded (out of scope). The contract cannot see intent, so "kickback" is a label, not a proof.
-6. **Bribe Arena.** A fixed-seed demo with honest and crooked merchants, a naive agent and Loyal Cart. It shows three attacks: a valid offer with identical fields and injection text loses on the tie-break; a 5 NEAR transfer is forwarded and the winner is unchanged; expired/excluded/over-price offers are filtered.
+6. **Bribe Arena.** A fixed-seed demo with honest and crooked merchants, a **scripted naive agent (no LLM)**, and Loyal Cart. It shows three attacks: a valid offer with injection text and a 0.50 NEAR worse price loses on score; a 5 NEAR cooperative `donate()` cannot change the winner (a plain transfer needs `sweep`); expired/excluded/over-price offers are filtered.
 
 See `SPEC.md` for the interfaces, schemas, scoring, threat model, arena script and demo storyboard.
 
@@ -46,6 +48,22 @@ make test-integration # builds wasm, then runs the near-workspaces sandbox flow
 
 `make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. Testnet deployment is still pending.
 
+## Agent baseline (honest label)
+
+The arena's baseline is a **scripted naive agent, not an LLM**; the fixture includes its recorded transcript. The security claim does not depend on a model: the contract checks the quote, the hashes and the winner. A real LLM adapter is an optional CP3 seam; see `docs/LLM-AGENT.md` and `packages/agent/agent.mjs`.
+
+## Lock check (after testnet deploy; planned)
+
+After deploying, delete the deployer's full-access keys on OfferBook and CheckoutGate and publish the wasm hashes. The check is:
+
+```sh
+node packages/verifier/lock-check.mjs \
+  --contract offerbook.<parent>.testnet \
+  --expected-code-hash <sha256>
+```
+
+It prints the keys and the wasm hash and fails if a full-access key remains or the hash differs. The AgentAccount stays owner-controlled because the owner is the principal. See `scripts/deploy-testnet.sh` and `deployments.example.json`.
+
 ---
 
 ## Repository layout
@@ -55,7 +73,7 @@ contracts/shared/        types, scoring, Borsh hashing, golden tests
 contracts/offer-book/    offer index, quote snapshot, winner
 contracts/checkout-gate/ proof-gated payment
 contracts/agent-account/ budget, scoped agent key, kickback forwarding
-packages/verifier/       dependency-free Node argmax verifier
+packages/verifier/       dependency-free Node best-scoring (lowest cost) verifier
 packages/arena/          deterministic Bribe Arena
 packages/ui/             static demo UI (CP3)
 docs/                    threat model, demo, worklogs
@@ -68,8 +86,8 @@ fixtures/                committed quote/arena fixtures
 
 - **NorthCinder** — "your shopping agent should work for you"; verifiable neutral ranking by re-execution over *disclosed* inputs, no chain. Its own docs concede that a dishonest service could curate the offer set and then rank honestly over it. Loyal Cart makes the offer set a public contract index and the ranking the payment condition, so the curated-set move cannot close a sale.
 - **CheckMate** — deterministic policy engine, injection-resistant listings, signed purchase plan; the signatures are operator HMACs, so a third party cannot verify them without the operator's key. Loyal Cart's quote and winner are on chain, and the payment contract checks them.
-- **arXiv 2609.11757 / A-VIP** — names the gap "signing the transaction but not the decision." Loyal Cart binds the decision (argmax under the committed policy) to settlement.
-- **Gebele, Mutzel, Öz & Matthes, *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25, DOI 10.1145/3733815.3764043)** — already gates settlement on an argmax over a committed set. Loyal Cart differs by using a public offer book and a buyer-authored policy, with no TEE. This is why we do not claim "first."
+- **arXiv 2609.11757 / A-VIP** — names the gap "signing the transaction but not the decision." Loyal Cart binds the decision (best-scoring (lowest cost) under the committed policy) to settlement.
+- **Gebele, Mutzel, Öz & Matthes, *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25, DOI 10.1145/3733815.3764043)** — already gates settlement on a best-scoring rule over a committed set. Loyal Cart differs by using a public offer book and a buyer-authored policy, with no TEE. This is why we do not claim "first."
 
 These are prior art. The honest claim is mechanism-level, not novelty-level; see `CLAIMS.md` C13a/C13b and `docs/RELATED-WORK.md`.
 
@@ -87,7 +105,8 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **Scoring-author collusion.** The proof binds the choice to the committed policy, not to the quality or fairness of that policy. A delegated or LLM-authored policy can be steered, and the steering will be signed.
 - **False fields.** A merchant can lie about delivery or item quality. The proof covers the choice, not the truth of the fields.
 - **Sybil offers and reputation farming.** A merchant can post from many accounts and buy its own offers through a second account to inflate `sales`; a seller bond is future work.
-- **Off-chain kickbacks to the operator/developer.** The contract catches transfers to the agent account, not a side payment to a human. Forwarding is fee capture for the user, not an anti-bribery mechanism.
+- **A plain transfer is not auto-forwarded.** `donate()` forwards the attached deposit; a plain NEAR transfer runs no contract code and must be swept. Anyone can call `sweep()`, but it is not automatic. NEP-141 plain transfers are not forwarded at all.
+- **Off-chain kickbacks to the operator/developer.** The contract catches transfers to the agent account, not a side payment to a human. Forwarding is fee capture for the user, not an anti-bribery mechanism. The strong claim is that a bribe cannot change the winner.
 - **The policy reveals the budget.** The committed policy is public in the quote, including `max_price`. The optional TEE brief exists only to hide it, and is not part of the security claim.
 - **A full-access key on the agent account defeats forwarding.** A contract account with a full-access key can be deleted and its balance sent anywhere. `donate`/`sweep` only bind if no such key exists.
 - **Kickback capture is NEAR-only.** A NEP-141 `ft_transfer` to a contract account does not call `ft_on_transfer`; a token plain transfer is not forwarded by `donate`.

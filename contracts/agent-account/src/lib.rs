@@ -3,7 +3,7 @@ use near_sdk::json_types::U128;
 use near_sdk::{env, near, AccountId, Gas, NearToken, PanicOnDefault, Promise};
 use serde_json::json;
 
-const STORAGE_RESERVE_YOCTO: u128 = 50_000_000_000_000_000_000_000;
+const STORAGE_RESERVE_YOCTO: u128 = 5_000_000_000_000_000_000_000_000;
 const OFFER_BOOK_GAS_TGAS: u64 = 30;
 const CHECKOUT_GATE_GAS_TGAS: u64 = 50;
 
