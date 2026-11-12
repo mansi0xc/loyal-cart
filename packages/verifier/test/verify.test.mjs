@@ -57,18 +57,20 @@ test("metamorphic: random listing text and metadata leave the ranking unchanged"
     state = (1664525 * state + 1013904223) >>> 0;
     return state / 2 ** 32;
   };
-  const altered = fixture.offers.map((offer) => ({
-    ...offer,
-    listing_text: Array.from({ length: 24 }, () =>
-      String.fromCharCode(32 + Math.floor(next() * 95)),
-    ).join(""),
-    metadata_hash: Array.from({ length: 32 }, () => Math.floor(next() * 256)),
-  }));
-  const after = rankOffers(altered, fixture.policy, fixture.quote_block).map(
-    (entry) => entry.offer_id,
-  );
-  assert.deepEqual(after, before);
-  assert.notEqual(offerHash(altered[0]), offerHash(fixture.offers[0]));
+  for (let round = 0; round < 64; round += 1) {
+    const altered = fixture.offers.map((offer) => ({
+      ...offer,
+      listing_text: Array.from({ length: 24 }, () =>
+        String.fromCharCode(32 + Math.floor(next() * 95)),
+      ).join(""),
+      metadata_hash: Array.from({ length: 32 }, () => Math.floor(next() * 256)),
+    }));
+    const after = rankOffers(altered, fixture.policy, fixture.quote_block).map(
+      (entry) => entry.offer_id,
+    );
+    assert.deepEqual(after, before, `ranking changed at round ${round}`);
+    assert.notEqual(offerHash(altered[0]), offerHash(fixture.offers[0]));
+  }
 });
 
 test("verifier rejects a non-winner checkout", () => {

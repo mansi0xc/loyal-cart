@@ -1,6 +1,6 @@
 # Loyal Cart — Claims Ledger
 
-**Status at CP1:** every row is **PLANNED** except where noted. No user-facing text may present a PLANNED row as verified.
+**Status at CP4:** mechanism rows are **VERIFIED** or **ATTESTED** as marked; C10 and C11 are **DROPPED**; C15 (video) is **PLANNED**. No user-facing text may present a PLANNED row as verified.
 **Rule:** one row per factual sentence in README, demo video, X post, and submission form.
 
 **Status values**
