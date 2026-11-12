@@ -1,6 +1,6 @@
 # Loyal Cart
 
-**Status: CP2 in progress. The three contracts are implemented and pass unit tests plus a local near-workspaces integration test: quote creation, winner checkout, non-winner refusal, and kickback forwarding. No testnet deployment yet.** The claims ledger (`CLAIMS.md`) marks every system claim with its evidence status. The fixture verifier and arena run; the sandbox integration test runs after `make build-wasm`.
+**Status: CP2 deployed and locked on NEAR testnet.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
@@ -46,7 +46,36 @@ make arena            # deterministic Bribe Arena fixture
 make test-integration # builds wasm, then runs the near-workspaces sandbox flow
 ```
 
-`make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. Testnet deployment is still pending.
+`make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. Testnet is deployed and locked (see below).
+
+## Live testnet (deployed 2026-11-12)
+
+| Role | Account |
+|---|---|
+| Owner | `lc-111206284835-owner.testnet` |
+| OfferBook | `lc-111206284835-offerbook.testnet` |
+| CheckoutGate | `lc-111206284835-checkout.testnet` |
+| AgentAccount | `lc-111206284835-agent.testnet` |
+| Runner (agent) | `lc-111206284835-runner.testnet` |
+| Merchant | `lc-111206284835-merchant.testnet` |
+
+**Lock check:** OfferBook and CheckoutGate have **0 access keys**; the wasm hashes match the published build (`703e5c57…` and `eb03bea9…`). The AgentAccount has the owner's full-access key and the runner's function-call key scoped to `execute_purchase`. The full record is in `deployments.json`.
+
+**Real transactions:**
+- Winner checkout: [qttMVuFUsZPhTMyzPPax9YmKx5sSJapfyPJv9WJ3zv7](https://testnet.nearblocks.io/txns/qttMVuFUsZPhTMyzPPax9YmKx5sSJapfyPJv9WJ3zv7) — seller received exactly 0.1 NEAR.
+- Non-winner refusal: [5WJmzbCELSSgi6wX6Daw6j32EwGR5aDJ1kho5ixQagpU](https://testnet.nearblocks.io/txns/5WJmzbCELSSgi6wX6Daw6j32EwGR5aDJ1kho5ixQagpU) — failed receipt `7YxnXodGipvERgZutqzjgGEgq2hXYRntrPM4eeEXdjdm`; no purchase recorded.
+- Cooperative donate: [8cbCEPqinRaDdtfPt9bmA7TYyqkSJXVKfXWcTYFjW1Sx](https://testnet.nearblocks.io/txns/8cbCEPqinRaDdtfPt9bmA7TYyqkSJXVKfXWcTYFjW1Sx) — owner +0.05 NEAR.
+- Plain transfer: [H8AQCvscfC2mX4vpitSa3jMMBHGSo8A6NmZGEqNuzcsp](https://testnet.nearblocks.io/txns/H8AQCvscfC2mX4vpitSa3jMMBHGSo8A6NmZGEqNuzcsp).
+- Permissionless sweep: [FEQvP9E9FTQV55mX3rV1kzaWzG6BXbC11QcD8vM8qQoq](https://testnet.nearblocks.io/txns/FEQvP9E9FTQV55mX3rV1kzaWzG6BXbC11QcD8vM8qQoq).
+
+Live verification against quote 2:
+
+```sh
+node packages/verifier/verify.mjs --rpc https://rpc.testnet.fastnear.com \
+  --offer-book lc-111206284835-offerbook.testnet --quote 2
+```
+
+It prints `OFFER_HASHES_MATCH`, `WINNER_IS_BEST_SCORING`, `CHECKOUT_GATE: PASS`. This is the independent recomputation, with no wallet.
 
 ## Agent baseline (honest label)
 
@@ -115,7 +144,7 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation.
 - **RPC and external services.** Testnet, the RPC and 1Click are external dependencies; a recorded artifact is a recording, not a live run.
 - **1Click dry quotes.** The testnet demo shows a quote, not a mainnet execution.
-- **Almost nothing is verified on testnet yet.** The contracts are implemented and pass a local near-workspaces sandbox flow, but there is no testnet deployment, no real refused tx and no real forwarded tx in this README.
+- **The testnet flow is verified; these are not.** The arena's testnet mode, 1Click, the optional TEE brief, the agent key rotation and the F5 offer-spam protection (one live offer per seller + refundable deposit) are not done.
 
 The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 
