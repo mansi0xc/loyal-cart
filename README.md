@@ -1,5 +1,7 @@
 # Loyal Cart
 
+**Repo:** https://github.com/mansi0xc/loyal-cart
+
 **Status: CP4. CP3 is deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
@@ -196,7 +198,7 @@ The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 
 ## Companion project
 
-**Pinned** is the second project: a generation-pinned payment router for rentable names, in `../pinned/` (separate repository). It has its own README, claims ledger and testnet evidence.
+**Pinned** is the second project: a generation-pinned payment router for rentable names, at https://github.com/mansi0xc/pinned (separate repository). It has its own README, claims ledger and testnet evidence.
 
 ## License
 
