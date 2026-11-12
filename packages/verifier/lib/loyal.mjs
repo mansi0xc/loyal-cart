@@ -48,6 +48,9 @@ export const borshPolicy = (policy) =>
     vecStr(policy.excluded_sellers),
   ]);
 
+const metadataBytes = (value) =>
+  Array.isArray(value) ? Buffer.from(value) : Buffer.from(value, "hex");
+
 export const borshOffer = (offer) =>
   Buffer.concat([
     u64(offer.offer_id),
@@ -56,10 +59,13 @@ export const borshOffer = (offer) =>
     u128(offer.price),
     u16(offer.delivery_days),
     u64(offer.expires_at_block),
-    Buffer.from(offer.metadata_hash, "hex"),
+    metadataBytes(offer.metadata_hash),
   ]);
 
 export const sha256Hex = (buf) => createHash("sha256").update(buf).digest("hex");
+
+export const normalizeHash = (value) =>
+  Array.isArray(value) ? Buffer.from(value).toString("hex") : String(value).replace(/^0x/i, "").toLowerCase();
 
 export const policyHash = (policy) => sha256Hex(borshPolicy(policy));
 export const offerHash = (offer) => sha256Hex(borshOffer(offer));
@@ -129,6 +135,21 @@ export const verifyQuote = (fixture) => {
       ? "no valid offers"
       : `expected ${fixture.winner_offer_id}, got ${winner.offer_id}`,
   });
+
+  if (Array.isArray(fixture.offer_hashes) && fixture.offer_hashes.length > 0) {
+    const hashesMatch =
+      fixture.offers.length === fixture.offer_hashes.length &&
+      fixture.offers.every(
+        (offer, index) => offerHash(offer) === normalizeHash(fixture.offer_hashes[index]),
+      );
+    checks.push({
+      name: "offer_hashes_match",
+      ok: hashesMatch,
+      detail: hashesMatch
+        ? "all offers match the quote commitments"
+        : "a committed offer changed",
+    });
+  }
 
   const chosen = fixture.offers.find((offer) => offer.offer_id === fixture.chosen_offer_id) ?? null;
   const chosenValid = chosen !== null && offerIsValid(chosen, fixture.policy, fixture.quote_block);
