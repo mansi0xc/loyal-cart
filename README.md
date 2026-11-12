@@ -1,6 +1,6 @@
 # Loyal Cart
 
-**Status: CP3 deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
+**Status: CP4. CP3 is deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
