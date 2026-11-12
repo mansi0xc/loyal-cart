@@ -2,7 +2,7 @@
 
 **Repo:** https://github.com/mansi0xc/loyal-cart
 
-**Status: CP4. CP3 is deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
+**Status: CP5 code complete; the demo video is pending.** CP3 is deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants. OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
@@ -16,7 +16,7 @@ The honest claim ladder (only use the highest rung whose ledger rows are VERIFIE
 
 We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on a best-scoring rule over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
 
-Tracks: **realworld**, **business**, **swarms**, **open**. The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
+Tracks: **realworld**, **swarms**, **open** (business is optional). The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
 
 ---
 
