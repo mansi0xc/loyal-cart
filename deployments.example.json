@@ -17,6 +17,6 @@
   "notes": [
     "OfferBook and CheckoutGate full-access keys are deleted after init; AgentAccount stays owner-controlled.",
     "Publish these addresses and hashes in the README after deployment.",
-    "This file is a template until CP2 deployment; do not present it as a live deployment."
+    "This is a template. The live CP3 record is deployments.json; do not present this file as a live deployment."
   ]
 }

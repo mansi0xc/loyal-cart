@@ -8,6 +8,14 @@ use near_sdk::store::LookupMap;
 use near_sdk::{env, near, AccountId, Gas, NearToken, PanicOnDefault, Promise};
 use serde_json::json;
 
+macro_rules! require_eq {
+    ($a:expr, $b:expr, $msg:literal) => {
+        if $a != $b {
+            near_sdk::env::panic_str($msg);
+        }
+    };
+}
+
 const MIN_EXPIRY_BLOCKS: u64 = 10;
 const GATE_GAS_TGAS: u64 = 20;
 
@@ -50,15 +58,30 @@ impl OfferBook {
         expires_at_block: u64,
         metadata_hash: [u8; 32],
     ) -> OfferId {
-        assert!(valid_item_id(&item_id), "InvalidItemId");
-        assert!(valid_price(price.0), "InvalidPrice");
-        assert!(delivery_days <= MAX_DELIVERY_DAYS, "InvalidDelivery");
-        assert!(
+        near_sdk::require!(valid_item_id(&item_id), "InvalidItemId");
+        near_sdk::require!(valid_price(price.0), "InvalidPrice");
+        near_sdk::require!(delivery_days <= MAX_DELIVERY_DAYS, "InvalidDelivery");
+        near_sdk::require!(
             expires_at_block > env::block_height() + MIN_EXPIRY_BLOCKS,
             "ExpiryTooSoon"
         );
 
         let seller = env::predecessor_account_id();
+        let mut ids = self
+            .offers_by_item
+            .get(&item_id)
+            .cloned()
+            .unwrap_or_default();
+        for existing_id in &ids {
+            let existing = self
+                .offers
+                .get(existing_id)
+                .unwrap_or_else(|| near_sdk::env::panic_str("OfferNotFound"));
+            near_sdk::require!(
+                !(existing.seller == seller && existing.expires_at_block > env::block_height()),
+                "OfferAlreadyLive"
+            );
+        }
         let offer_id = self.next_offer_id;
         self.next_offer_id += 1;
         let offer = Offer {
@@ -71,11 +94,6 @@ impl OfferBook {
             metadata_hash,
         };
         self.offers.insert(offer_id, offer.clone());
-        let mut ids = self
-            .offers_by_item
-            .get(&item_id)
-            .cloned()
-            .unwrap_or_default();
         ids.push(offer_id);
         self.offers_by_item.insert(item_id, ids);
 
@@ -105,14 +123,17 @@ impl OfferBook {
         policy_hash: [u8; 32],
         ttl_blocks: u64,
     ) -> QuoteId {
-        assert_eq!(
+        require_eq!(
             policy_hash,
             loyal_cart_shared::policy_hash(&policy),
             "PolicyHashMismatch"
         );
-        assert!(valid_policy(&policy), "InvalidPolicy");
-        assert!(ttl_blocks > 0 && ttl_blocks <= MAX_TTL_BLOCKS, "InvalidTtl");
-        let gate = self.checkout_gate.clone().expect("GateNotSet");
+        near_sdk::require!(valid_policy(&policy), "InvalidPolicy");
+        near_sdk::require!(ttl_blocks > 0 && ttl_blocks <= MAX_TTL_BLOCKS, "InvalidTtl");
+        let gate = self
+            .checkout_gate
+            .clone()
+            .unwrap_or_else(|| near_sdk::env::panic_str("GateNotSet"));
         let buyer = env::predecessor_account_id();
         let quote_block = env::block_height();
 
@@ -123,17 +144,21 @@ impl OfferBook {
             .unwrap_or_default();
         let mut valid: Vec<(Offer, u64)> = Vec::new();
         for id in ids {
-            let offer = self.offers.get(&id).expect("OfferNotFound").clone();
+            let offer = self
+                .offers
+                .get(&id)
+                .unwrap_or_else(|| near_sdk::env::panic_str("OfferNotFound"))
+                .clone();
             if offer_is_valid(&offer, &policy, quote_block) {
                 let sales = *self.sales.get(&offer.seller).unwrap_or(&0);
                 valid.push((offer, sales));
             }
         }
-        assert!(!valid.is_empty(), "NoValidOffers");
-        assert!(valid.len() <= MAX_OFFERS_PER_QUOTE, "TooManyOffers");
+        near_sdk::require!(!valid.is_empty(), "NoValidOffers");
+        near_sdk::require!(valid.len() <= MAX_OFFERS_PER_QUOTE, "TooManyOffers");
 
         let ranked = rank_offers(&valid, &policy, quote_block);
-        assert!(!ranked.is_empty(), "NoValidOffers");
+        near_sdk::require!(!ranked.is_empty(), "NoValidOffers");
 
         let mut offer_ids = Vec::with_capacity(ranked.len());
         let mut offer_hashes = Vec::with_capacity(ranked.len());
@@ -142,7 +167,7 @@ impl OfferBook {
             let (offer, sales) = valid
                 .iter()
                 .find(|(offer, _)| offer.offer_id == ranked_offer.offer_id)
-                .expect("ranked offer missing");
+                .unwrap_or_else(|| near_sdk::env::panic_str("ranked offer missing"));
             offer_ids.push(offer.offer_id);
             offer_hashes.push(offer_hash(offer));
             seller_sales.push(*sales);
@@ -151,7 +176,7 @@ impl OfferBook {
         let winner_offer = valid
             .iter()
             .find(|(offer, _)| offer.offer_id == winner_offer_id)
-            .expect("winner missing")
+            .unwrap_or_else(|| near_sdk::env::panic_str("winner missing"))
             .0
             .clone();
 
@@ -176,7 +201,7 @@ impl OfferBook {
             "quote": quote,
             "winner_offer": winner_offer
         }))
-        .expect("quote serialization cannot fail");
+        .unwrap_or_else(|_| near_sdk::env::panic_str("quote serialization cannot fail"));
         let _ = Promise::new(gate).function_call(
             "register_quote".to_string(),
             args,
@@ -205,18 +230,22 @@ impl OfferBook {
     }
 
     pub fn mark_executed(&mut self, quote_id: QuoteId) {
-        assert_eq!(
+        require_eq!(
             env::predecessor_account_id(),
-            self.checkout_gate.clone().expect("GateNotSet"),
+            self.checkout_gate
+                .clone()
+                .unwrap_or_else(|| near_sdk::env::panic_str("GateNotSet")),
             "OnlyCheckoutGate"
         );
         self.executed_quotes.insert(quote_id, true);
     }
 
     pub fn record_sale(&mut self, seller: AccountId) {
-        assert_eq!(
+        require_eq!(
             env::predecessor_account_id(),
-            self.checkout_gate.clone().expect("GateNotSet"),
+            self.checkout_gate
+                .clone()
+                .unwrap_or_else(|| near_sdk::env::panic_str("GateNotSet")),
             "OnlyCheckoutGate"
         );
         let count = *self.sales.get(&seller).unwrap_or(&0);
@@ -224,13 +253,16 @@ impl OfferBook {
     }
 
     pub fn set_checkout_gate(&mut self, gate: AccountId) {
-        assert_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
-        assert!(self.checkout_gate.is_none(), "GateAlreadySet");
+        require_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
+        near_sdk::require!(self.checkout_gate.is_none(), "GateAlreadySet");
         self.checkout_gate = Some(gate);
     }
 
     pub fn get_offer(&self, offer_id: OfferId) -> Offer {
-        self.offers.get(&offer_id).expect("OfferNotFound").clone()
+        self.offers
+            .get(&offer_id)
+            .unwrap_or_else(|| near_sdk::env::panic_str("OfferNotFound"))
+            .clone()
     }
 
     pub fn get_offers_by_item(&self, item_id: String) -> Vec<OfferId> {
@@ -245,7 +277,10 @@ impl OfferBook {
     }
 
     pub fn get_quote(&self, quote_id: QuoteId) -> Quote {
-        self.quotes.get(&quote_id).expect("QuoteNotFound").clone()
+        self.quotes
+            .get(&quote_id)
+            .unwrap_or_else(|| near_sdk::env::panic_str("QuoteNotFound"))
+            .clone()
     }
 
     pub fn quote_hash(&self, quote_id: QuoteId) -> [u8; 32] {
@@ -407,11 +442,25 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "OfferAlreadyLive")]
+    fn one_live_offer_per_seller_per_item() {
+        let mut book = book_with_gate();
+        post(&mut book, "honest.testnet", 1, U128(10 * NEAR_YOCTO), 2);
+        post(&mut book, "honest.testnet", 2, U128(11 * NEAR_YOCTO), 2);
+    }
+
+    #[test]
     #[should_panic(expected = "TooManyOffers")]
     fn create_quote_panics_above_the_offer_cap() {
         let mut book = book_with_gate();
         for id in 1..=65 {
-            post(&mut book, "honest.testnet", id, U128(10 * NEAR_YOCTO), 2);
+            post(
+                &mut book,
+                &format!("seller-{id}.testnet"),
+                id,
+                U128(10 * NEAR_YOCTO),
+                2,
+            );
         }
         let p = policy();
         let hash = policy_hash(&p);

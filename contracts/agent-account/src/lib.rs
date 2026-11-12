@@ -3,7 +3,15 @@ use near_sdk::json_types::U128;
 use near_sdk::{env, near, AccountId, Gas, NearToken, PanicOnDefault, Promise};
 use serde_json::json;
 
-const STORAGE_RESERVE_YOCTO: u128 = 5_000_000_000_000_000_000_000_000;
+macro_rules! require_eq {
+    ($a:expr, $b:expr, $msg:literal) => {
+        if $a != $b {
+            near_sdk::env::panic_str($msg);
+        }
+    };
+}
+
+const STORAGE_MARGIN_YOCTO: u128 = 500_000_000_000_000_000_000_000;
 const OFFER_BOOK_GAS_TGAS: u64 = 30;
 const CHECKOUT_GATE_GAS_TGAS: u64 = 50;
 
@@ -37,7 +45,7 @@ impl AgentAccount {
 
     #[payable]
     pub fn deposit(&mut self) {
-        assert_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
+        require_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
         env::log_str(&format!(
             "EVENT_JSON:{}",
             json!({
@@ -53,8 +61,8 @@ impl AgentAccount {
     }
 
     pub fn commit_policy(&mut self, policy_hash: [u8; 32]) {
-        assert_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
-        assert!(
+        require_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
+        near_sdk::require!(
             self.committed_policy_hash.is_none(),
             "PolicyAlreadyCommitted"
         );
@@ -77,16 +85,18 @@ impl AgentAccount {
         policy_hash: [u8; 32],
         ttl_blocks: u64,
     ) -> Promise {
-        assert_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
-        let committed = self.committed_policy_hash.expect("PolicyNotCommitted");
-        assert_eq!(committed, policy_hash, "PolicyMismatch");
+        require_eq!(env::predecessor_account_id(), self.owner, "OnlyOwner");
+        let committed = self
+            .committed_policy_hash
+            .unwrap_or_else(|| near_sdk::env::panic_str("PolicyNotCommitted"));
+        require_eq!(committed, policy_hash, "PolicyMismatch");
         let args = serde_json::to_vec(&json!({
             "item_id": item_id,
             "policy": policy,
             "policy_hash": policy_hash,
             "ttl_blocks": ttl_blocks
         }))
-        .expect("create_quote args cannot fail");
+        .unwrap_or_else(|_| near_sdk::env::panic_str("create_quote args cannot fail"));
         Promise::new(self.offer_book.clone()).function_call(
             "create_quote".to_string(),
             args,
@@ -96,12 +106,12 @@ impl AgentAccount {
     }
 
     pub fn execute_purchase(&self, quote_id: QuoteId, offer_id: OfferId, amount: U128) -> Promise {
-        assert_eq!(env::predecessor_account_id(), self.agent, "OnlyAgent");
+        require_eq!(env::predecessor_account_id(), self.agent, "OnlyAgent");
         let args = serde_json::to_vec(&json!({
             "quote_id": quote_id,
             "offer_id": offer_id
         }))
-        .expect("execute_purchase args cannot fail");
+        .unwrap_or_else(|_| near_sdk::env::panic_str("execute_purchase args cannot fail"));
         Promise::new(self.checkout_gate.clone()).function_call(
             "execute".to_string(),
             args,
@@ -133,7 +143,11 @@ impl AgentAccount {
 
     pub fn sweep(&mut self) {
         let balance = env::account_balance().as_yoctonear();
-        let sweepable = balance.saturating_sub(STORAGE_RESERVE_YOCTO);
+        let storage_cost = env::storage_byte_cost().as_yoctonear();
+        let reserve = storage_cost
+            .saturating_mul(env::storage_usage() as u128)
+            .saturating_add(STORAGE_MARGIN_YOCTO);
+        let sweepable = balance.saturating_sub(reserve);
         if sweepable > 0 {
             let _ = Promise::new(self.owner.clone()).transfer(NearToken::from_yoctonear(sweepable));
             env::log_str(&format!(

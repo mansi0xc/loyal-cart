@@ -1,6 +1,6 @@
 # Loyal Cart
 
-**Status: CP2 deployed and locked on NEAR testnet.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
+**Status: CP3 deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants.** OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
@@ -26,7 +26,7 @@ AI shopping agents are starting to spend real money. The agent's operator, the m
 
 1. **On-chain offer book.** Merchants post fixed-field offers (item id, price, delivery days, seller, expiry, metadata hash). The on-chain struct has no free-text field; off-chain metadata may contain arbitrary text and is committed only by hash. The item id is a 1–64 char slug.
 2. **User-committed scoring.** The owner commits a hash of the scoring policy (price / delivery / seller reputation weights, max price, exclusions) one-way before any quote; the agent account refuses a quote with a different hash.
-3. **Quote snapshot.** The offer book snapshots every valid offer for the item from its own index, up to 64; above the cap it panics rather than truncating. The agent cannot pass an arbitrary list or swap the policy.
+3. **Quote snapshot.** The offer book snapshots every valid offer for the item from its own index, up to 64; each (seller, item) may have only one live offer, and above the cap it panics rather than truncating. The agent cannot pass an arbitrary list or swap the policy.
 4. **Proof-gated checkout.** The checkout contract forwards the buyer's attached deposit to the seller only if the chosen offer is the quote's winner and the offer hash matches. Any other choice reverts.
 5. **Forwarding account.** Any NEAR sent to the agent account through `donate` is forwarded to the owner; a plain transfer can be swept to the owner by anyone. The agent has no method that pays the agent or a third party. NEP-141 plain transfers are not forwarded (out of scope). The contract cannot see intent, so "kickback" is a label, not a proof.
 6. **Bribe Arena.** A fixed-seed demo with honest and crooked merchants, a **scripted naive agent (no LLM)**, and Loyal Cart. It shows three attacks: a valid offer with injection text and a 0.50 NEAR worse price loses on score; a 5 NEAR cooperative `donate()` cannot change the winner (a plain transfer needs `sweep`); expired/excluded/over-price offers are filtered.
@@ -35,7 +35,7 @@ See `SPEC.md` for the interfaces, schemas, scoring, threat model, arena script a
 
 ---
 
-## Quickstart (CP2: unit tests + local sandbox; testnet pending)
+## Quickstart (CP3: unit tests, local sandbox, live testnet evidence)
 
 These run on a clean clone with no wallet, no funds and no paid keys:
 
@@ -43,52 +43,79 @@ These run on a clean clone with no wallet, no funds and no paid keys:
 make test             # Rust workspace + Node verifier/arena tests
 make verify           # dependency-free verifier on the committed quote fixture
 make arena            # deterministic Bribe Arena fixture
+npm run arena:testnet # re-fetches every tx in artifacts/arena-testnet.json (no keys)
 make test-integration # builds wasm, then runs the near-workspaces sandbox flow
+npm run ui            # CP3 web UI at http://localhost:4173 from artifacts/arena-testnet.json
 ```
 
-`make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. Testnet is deployed and locked (see below).
+`make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails with an on-chain `NotWinner` message and without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. On some machines the sandbox needs `ulimit -n 65535`; this test is optional and the testnet transactions below are the same evidence. Testnet is deployed and locked (see below).
 
-## Live testnet (deployed 2026-11-12)
+## Live testnet (CP3, deployed 2026-11-12)
 
 | Role | Account |
 |---|---|
-| Owner | `lc-111206284835-owner.testnet` |
-| OfferBook | `lc-111206284835-offerbook.testnet` |
-| CheckoutGate | `lc-111206284835-checkout.testnet` |
-| AgentAccount | `lc-111206284835-agent.testnet` |
+| Owner / buyer | `lc-111206284835-owner.testnet` |
+| OfferBook | `offerbook3.lc-111206284835-owner.testnet` |
+| CheckoutGate | `checkout3.lc-111206284835-owner.testnet` |
+| AgentAccount | `agent3.lc-111206284835-owner.testnet` |
 | Runner (agent) | `lc-111206284835-runner.testnet` |
-| Merchant | `lc-111206284835-merchant.testnet` |
+| Honest A | `honest-a.lc-111206284835-owner.testnet` |
+| Honest B | `honest-b.lc-111206284835-owner.testnet` |
+| Crooked (kickback) | `crooked.lc-111206284835-owner.testnet` |
+| Injector (invalid) | `injector.lc-111206284835-owner.testnet` |
+| Injector (valid, worse) | `injector-valid.lc-111206284835-owner.testnet` |
+| Expired | `expired.lc-111206284835-owner.testnet` |
+| Excluded | `excluded.lc-111206284835-owner.testnet` |
 
-**Lock check:** OfferBook and CheckoutGate have **0 access keys**; the wasm hashes match the published build (`703e5c57…` and `eb03bea9…`). The AgentAccount has the owner's full-access key and the runner's function-call key scoped to `execute_purchase`. The full record is in `deployments.json`.
+**Lock check:** OfferBook and CheckoutGate have **0 access keys**; the deployed code hashes match the published values (`fb94e3ed…` OfferBook, `4b18f337…` CheckoutGate, `b70796e3…` AgentAccount). This is not a reproducible-build claim: a plain `cargo build` embeds machine-specific paths, so a rebuilt wasm can differ. The lock check proves chain hash = published hash, not chain code = reviewed source. The AgentAccount has the owner's full-access key and the runner's function-call key scoped to `execute_purchase` with a 0.25 NEAR allowance (gas only). The full record is in `deployments.json`; the CP2 record is in `artifacts/cp2-deployments.json`.
 
-**Real transactions:**
-- Winner checkout: [qttMVuFUsZPhTMyzPPax9YmKx5sSJapfyPJv9WJ3zv7](https://testnet.nearblocks.io/txns/qttMVuFUsZPhTMyzPPax9YmKx5sSJapfyPJv9WJ3zv7) — seller received exactly 0.1 NEAR.
-- Non-winner refusal: [5WJmzbCELSSgi6wX6Daw6j32EwGR5aDJ1kho5ixQagpU](https://testnet.nearblocks.io/txns/5WJmzbCELSSgi6wX6Daw6j32EwGR5aDJ1kho5ixQagpU) — failed receipt `7YxnXodGipvERgZutqzjgGEgq2hXYRntrPM4eeEXdjdm`; no purchase recorded.
-- Cooperative donate: [8cbCEPqinRaDdtfPt9bmA7TYyqkSJXVKfXWcTYFjW1Sx](https://testnet.nearblocks.io/txns/8cbCEPqinRaDdtfPt9bmA7TYyqkSJXVKfXWcTYFjW1Sx) — owner +0.05 NEAR.
-- Plain transfer: [H8AQCvscfC2mX4vpitSa3jMMBHGSo8A6NmZGEqNuzcsp](https://testnet.nearblocks.io/txns/H8AQCvscfC2mX4vpitSa3jMMBHGSo8A6NmZGEqNuzcsp).
-- Permissionless sweep: [FEQvP9E9FTQV55mX3rV1kzaWzG6BXbC11QcD8vM8qQoq](https://testnet.nearblocks.io/txns/FEQvP9E9FTQV55mX3rV1kzaWzG6BXbC11QcD8vM8qQoq).
+**Real CP3 transactions** (item `gpu-hour-cp3-final3`, quote 2/3):
+- Winner checkout: [Fj64Shdpa4GFkMpVTKQHvFk3hD1Smo2DoT2Hd5gphbKa](https://testnet.nearblocks.io/txns/Fj64Shdpa4GFkMpVTKQHvFk3hD1Smo2DoT2Hd5gphbKa) — quote 2, offer 26 (`honest-a`) paid exactly 0.1 NEAR.
+- Non-winner refusal: [4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX](https://testnet.nearblocks.io/txns/4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX) — quote 3, offer 30 (`injector-valid`, 0.105 NEAR) failed with `Smart contract panicked: NotWinner`; no purchase recorded.
+- Cooperative donate: [4MeYcugH9CFAFK6uMfoPYTLwxbHVxpMAThKFHmQZw9F5](https://testnet.nearblocks.io/txns/4MeYcugH9CFAFK6uMfoPYTLwxbHVxpMAThKFHmQZw9F5) — owner +0.05 NEAR.
+- Plain transfer: [8b1Eg8ywa4WppJXbhs2vDmYs7DQHTyHWDx18q34uMynL](https://testnet.nearblocks.io/txns/8b1Eg8ywa4WppJXbhs2vDmYs7DQHTyHWDx18q34uMynL).
+- Permissionless sweep: [6gzGshrWX36baM6wBLZBTAnvA8tuGD3vyAWgTTTSZuNj](https://testnet.nearblocks.io/txns/6gzGshrWX36baM6wBLZBTAnvA8tuGD3vyAWgTTTSZuNj) — returns the whole free balance, not just the bribe, minus a storage reserve computed from `storage_usage * storage_byte_cost` plus a 0.5 NEAR margin. Owner +5.2227 NEAR; the agent kept 2.1859 NEAR for storage.
+- Policy commit: [2tHwiQY9wRcFbLDyZf4h6kAWYWgUEhjUqKE483FchqFh](https://testnet.nearblocks.io/txns/2tHwiQY9wRcFbLDyZf4h6kAWYWgUEhjUqKE483FchqFh) — one-way; hash `2959b64a…`.
 
-Live verification against quote 2:
+Every offer, quote, checkout and refusal in the arena is linked by hash in `artifacts/arena-testnet.json`:
+
+| Offer | Role | Price | Delivery | Result |
+|---|---|---|---|---|
+| 26 | honest-a | 0.10 NEAR | 2d | **winner**; paid |
+| 27 | honest-b | 0.11 NEAR | 1d | valid, ranked |
+| 28 | crooked | 0.12 NEAR | 3d | valid, ranked; donated 0.05 NEAR |
+| 30 | injector-valid | 0.105 NEAR | 2d | valid, ranked; refused as non-winner |
+| 25 | expired | 0.09 NEAR | 1d | filtered: expired |
+| 29 | injector | 2.00 NEAR | 30d | filtered: over the 1 NEAR cap |
+| 31 | excluded | 0.07 NEAR | 1d | filtered: seller excluded |
+
+Live verification against quote 2 (winner), and quote 3 plus the refusal tx:
 
 ```sh
 node packages/verifier/verify.mjs --rpc https://rpc.testnet.fastnear.com \
-  --offer-book lc-111206284835-offerbook.testnet --quote 2
+  --offer-book offerbook3.lc-111206284835-owner.testnet --quote 2 \
+  --tx Fj64Shdpa4GFkMpVTKQHvFk3hD1Smo2DoT2Hd5gphbKa --sender lc-111206284835-runner.testnet
+
+node packages/verifier/verify.mjs --rpc https://rpc.testnet.fastnear.com \
+  --offer-book offerbook3.lc-111206284835-owner.testnet --quote 3 \
+  --tx 4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX --sender lc-111206284835-runner.testnet
 ```
 
-It prints `OFFER_HASHES_MATCH`, `WINNER_IS_BEST_SCORING`, `CHECKOUT_GATE: PASS`. This is the independent recomputation, with no wallet.
+Both print PASS, including `tx_outcome_matches_book`; the refusal run also checks that the failure names `NotWinner`. The verifier needs no wallet.
 
 ## Agent baseline (honest label)
 
-The arena's baseline is a **scripted naive agent, not an LLM**; the fixture includes its recorded transcript. The security claim does not depend on a model: the contract checks the quote, the hashes and the winner. A real LLM adapter is an optional CP3 seam; see `docs/LLM-AGENT.md` and `packages/agent/agent.mjs`.
+The arena's baseline is a **scripted naive agent, not an LLM**; the fixture includes its recorded transcript. The security claim does not depend on a model: the contract checks the quote, the hashes and the winner. An optional LLM adapter exists in `packages/agent/agent.mjs` but is **not used** in this build; see `docs/LLM-AGENT.md`. The demo says “scripted baseline — no LLM” on screen.
 
-## Lock check (after testnet deploy; planned)
+## Lock check (done on CP3)
 
 After deploying, delete the deployer's full-access keys on OfferBook and CheckoutGate and publish the wasm hashes. The check is:
 
 ```sh
 node packages/verifier/lock-check.mjs \
-  --contract offerbook.<parent>.testnet \
-  --expected-code-hash <sha256>
+  --rpc https://rpc.testnet.fastnear.com \
+  --contract offerbook3.lc-111206284835-owner.testnet \
+  --expected-code-hash fb94e3eda80522d72f2ea37a9c33276b9997a83c5934b8790d40c0288fbe5f37
 ```
 
 It prints the keys and the wasm hash and fails if a full-access key remains or the hash differs. The AgentAccount stays owner-controlled because the owner is the principal. See `scripts/deploy-testnet.sh` and `deployments.example.json`.
@@ -102,11 +129,14 @@ contracts/shared/        types, scoring, Borsh hashing, golden tests
 contracts/offer-book/    offer index, quote snapshot, winner
 contracts/checkout-gate/ proof-gated payment
 contracts/agent-account/ budget, scoped agent key, kickback forwarding
+contracts/integration-tests/ near-workspaces sandbox flow
 packages/verifier/       dependency-free Node best-scoring (lowest cost) verifier
 packages/arena/          deterministic Bribe Arena
-packages/ui/             static demo UI (CP3)
+packages/web/            CP3 web UI (npm run ui)
+scripts/                 UI server, testnet replay, deploy checklist
 docs/                    threat model, demo, worklogs
 fixtures/                committed quote/arena fixtures
+artifacts/               CP3 testnet arena record (no secrets)
 ```
 
 ---
@@ -128,7 +158,7 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **Per-quote, not per-shopping-trip.** The agent chooses which item gets a quote and which quote gets executed. A perfect quote can still be the wrong purchase.
 - **The agent never has to buy anything.** A refusal to act leaves no on-chain trace. The design constrains what a purchase pays, not whether one happens.
 - **Index-completeness.** "Every valid offer" means every valid offer in this contract's index for the item at that block, not every offer in the market.
-- **The 64-offer cap.** Above `MAX_OFFERS_PER_QUOTE = 64`, `create_quote` panics rather than truncating. A griefer who can post 64 valid offers makes an item unquotable.
+- **The 64-offer cap.** Above `MAX_OFFERS_PER_QUOTE = 64`, `create_quote` panics rather than truncating. One live offer per (seller, item) blocks the trivial single-account DoS, but a griefer with many accounts can still fill the cap and make an item unquotable. A refundable storage deposit is not implemented.
 - **Ordering.** The policy is public to be scored, so a block producer that sees a pending quote can order an offer in front of it. No mitigation ships in v0.1.
 - **Merchant collusion.** The proof shows the agent picked the best committed offer under the user's scoring; it does not make the offers competitive or honest.
 - **Scoring-author collusion.** The proof binds the choice to the committed policy, not to the quality or fairness of that policy. A delegated or LLM-authored policy can be steered, and the steering will be signed.
@@ -144,7 +174,7 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation.
 - **RPC and external services.** Testnet, the RPC and 1Click are external dependencies; a recorded artifact is a recording, not a live run.
 - **1Click dry quotes.** The testnet demo shows a quote, not a mainnet execution.
-- **The testnet flow is verified; these are not.** The arena's testnet mode, 1Click, the optional TEE brief, the agent key rotation and the F5 offer-spam protection (one live offer per seller + refundable deposit) are not done.
+- **The testnet flow is verified; these are not.** The CP3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the optional TEE brief and agent key rotation are not implemented. The F5 one-live-offer half is done; the refundable storage deposit is not.
 
 The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 

@@ -33,8 +33,8 @@
 | **AgentAccount contract** | `agent.<team>.testnet` | hold the user's budget; execute a valid purchase; forward incoming merchant transfers to the owner; sweep its balance to the owner | keep a kickback; send funds to the agent or a third party; create a quote |
 
 **Trust assumptions stated up front:**
-- The OfferBook and CheckoutGate code is deployed once and not upgraded during judging. If the deployer key can upgrade, that key can change the rules; the README says so. CP2 will either lock the contract account or document the upgrade key.
-- The NEAR testnet RPC and the MPC/1Click services are external; the demo labels every dependency.
+- The OfferBook and CheckoutGate code is deployed once and not upgraded during judging. If the deployer key can upgrade, that key can change the rules; the README says so. CP2 locked the contract account: OfferBook and CheckoutGate have 0 access keys.
+- The NEAR testnet RPC is external; the demo labels every dependency.
 - The optional private brief (TEE) is **not** part of the security claim. If used, it adds a trusted operator (NEAR AI Cloud or OutLayer) plus hardware. The base claim uses the public committed policy.
 
 ---
@@ -297,7 +297,7 @@ fn get_balance() -> u128;                             // view
 - **Off-chain kickbacks to the operator/developer.** The contract catches on-chain transfers to the agent account; it cannot catch a side payment to the agent's developer.
 - **TEE trust, if the optional private brief is used.** NEAR AI Cloud/OutLayer plus hardware must be trusted; the base claim does not require it.
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation (lock or multisig).
-- **1Click dry quotes.** The UI shows a quote only; no mainnet funds move in the testnet demo.
+- **1Click.** Not implemented. No quote or panel is shown; the CP3 UI says so.
 - **Offer cap.** `MAX_OFFERS_PER_QUOTE = 64`; the contract panics rather than silently truncating.
 
 ---
@@ -365,7 +365,7 @@ Every sub-agent works only in its named files. The lead reviews and integrates. 
 |---|---|---|---|
 | CP1 | Thu 12 Nov 10:00 IST | Spec, repo skeleton, CI, shared types/scoring, verifier/arena fixtures, claims draft | UI polish, optional TEE, real 1Click |
 | CP2 | Thu 12 Nov 23:00 IST | Deploy OfferBook/CheckoutGate/AgentAccount on testnet; unit + integration tests; one refused checkout tx; one forwarded kickback tx; verifier CLI | retire_offer, quote_hash view, FT kickback |
-| CP3 | Fri 13 Nov 18:00 IST | `npm run arena` naive vs Loyal Cart, three attacks, fixed seed; UI 20-second moment; dry 1Click quote; TEE cut or labelled | real 1Click execution, TEE, seller reputation UI |
+| CP3 | Fri 13 Nov 18:00 IST | `npm run arena` naive vs Loyal Cart, three attacks, fixed seed; testnet replay with distinct merchants; UI 20-second moment; 1Click and TEE cut and labelled | real 1Click execution, TEE, seller reputation UI |
 | CP4 | Sat 14 Nov 12:00 IST | README "Do X, see Y"; clean-clone `make verify`; CLAIMS complete; "What this does not stop"; Related work; Claude re-runs screener | extra docs, extra merchants |
 | CP5 | Sat 14 Nov 22:00 IST | 2-min video, X post, form answers, fresh twin check; Mansi submits by Sun 15 Nov 03:00 IST | any non-essential feature |
 

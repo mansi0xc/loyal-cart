@@ -1,6 +1,6 @@
 # Loyal Cart — DEMO.md
 
-**Status: CP1 plan (2026-11-12).** Nothing in this file is evidence. Every command, hash, receipt and output below is either a placeholder (`<like_this>`), a line the repo genuinely prints today (the arena and verifier scripts, quoted verbatim from a CP1 run), or a line the repo must produce at CP2–CP5. No hash, number, gas figure, block height, test count or receipt text is invented here, and none may be typed by hand into a recording.
+**Status: CP3 demo draft (2026-11-12).** The testnet evidence is in `artifacts/arena-testnet.json`; this file is a recording plan, not evidence. 1Click is cut. Every command, hash, receipt and output below is either a placeholder (`<like_this>`), a line the repo genuinely prints today (the arena and verifier scripts, quoted verbatim from a CP1 run), or a line the repo must produce at CP2–CP5. No hash, number, gas figure, block height, test count or receipt text is invented here, and none may be typed by hand into a recording.
 
 **Owner:** A2 (this document and `docs/worklogs/a2-demo.md` only).
 **Binding rules:** `CLAIMS.md` (every user-facing sentence maps to a row; PLANNED rows may not be presented as verified), `SPEC.md` §7–§8, `README.md` "What this does not stop".
@@ -396,7 +396,7 @@ Field: `idea` (20–2000 characters). Tracks array: `["swarms","realworld","open
 >
 > What a stranger can check: a dependency-free Node verifier re-reads the quote, re-hashes every offer and recomputes the winner, with no wallet and no keys. A fixed-seed Bribe Arena shows three attacks refused: prompt injection in listing text, a kickback, and an expired or excluded offer.
 >
-> Labelling: the demo runs on NEAR testnet with mock merchant accounts and valueless testnet NEAR; no mainnet funds move. The 1Click checkout quote is a dry quote from a mainnet-only service and is labelled as a quote, not an execution. The optional TEE private brief is not implemented and is not part of the claim.
+> Labelling: the demo runs on NEAR testnet with mock merchant accounts and valueless testnet NEAR; no mainnet funds move. 1Click is not implemented and is not part of this demo; do not show a quote or panel. The optional TEE private brief is not implemented and is not part of the claim.
 >
 > What it does not stop: off-chain offers, merchant collusion, a captured policy author, false item fields, sybil offers, off-chain side payments to a human, upgrade-key risk, and the 64-offer quote cap.
 >
@@ -408,7 +408,7 @@ Field: `idea` (20–2000 characters). Tracks array: `["swarms","realworld","open
 
 - Send only when C01–C09, C12 and C15 are VERIFIED. Any row still PLANNED at CP5 must have its sentence deleted, not reworded into "will".
 - If the TEE brief ships, replace the last sentence of the labelling paragraph with a description that names the operator and says the base claim does not require it (C11).
-- If 1Click is not integrated, delete that sentence. Do not keep it because "the track mentions Intents".
+- 1Click is not integrated; the sentence is deleted. Do not keep it because "the track mentions Intents".
 
 ### 7.2 Mode F edits
 

@@ -5,6 +5,14 @@ use near_sdk::store::LookupMap;
 use near_sdk::{env, near, AccountId, Gas, NearToken, PanicOnDefault, Promise};
 use serde_json::json;
 
+macro_rules! require_eq {
+    ($a:expr, $b:expr, $msg:literal) => {
+        if $a != $b {
+            near_sdk::env::panic_str($msg);
+        }
+    };
+}
+
 const OFFER_BOOK_GAS_TGAS: u64 = 10;
 
 #[near(contract_state)]
@@ -35,22 +43,23 @@ impl CheckoutGate {
     }
 
     pub fn register_quote(&mut self, quote: Quote, winner_offer: Offer) {
-        assert_eq!(
+        require_eq!(
             env::predecessor_account_id(),
             self.offer_book,
             "OnlyOfferBook"
         );
-        assert!(!quote.offer_hashes.is_empty(), "EmptyQuote");
-        assert_eq!(
-            winner_offer.offer_id, quote.winner_offer_id,
+        near_sdk::require!(!quote.offer_hashes.is_empty(), "EmptyQuote");
+        require_eq!(
+            winner_offer.offer_id,
+            quote.winner_offer_id,
             "WinnerMismatch"
         );
-        assert_eq!(
+        require_eq!(
             offer_hash(&winner_offer),
             quote.offer_hashes[0],
             "WinnerHashMismatch"
         );
-        assert_eq!(winner_offer.item_id, quote.item_id, "ItemMismatch");
+        require_eq!(winner_offer.item_id, quote.item_id, "ItemMismatch");
 
         let quote_id = quote.quote_id;
         self.winner_offers.insert(quote_id, winner_offer);
@@ -69,33 +78,37 @@ impl CheckoutGate {
 
     #[payable]
     pub fn execute(&mut self, quote_id: QuoteId, offer_id: OfferId) -> PurchaseReceipt {
-        let quote = self.quotes.get(&quote_id).expect("QuoteNotFound").clone();
+        let quote = self
+            .quotes
+            .get(&quote_id)
+            .unwrap_or_else(|| near_sdk::env::panic_str("QuoteNotFound"))
+            .clone();
         let winner = self
             .winner_offers
             .get(&quote_id)
-            .expect("QuoteNotFound")
+            .unwrap_or_else(|| near_sdk::env::panic_str("QuoteNotFound"))
             .clone();
         let caller = env::predecessor_account_id();
 
-        assert_eq!(caller, quote.buyer, "NotBuyer");
-        assert!(
+        require_eq!(caller, quote.buyer, "NotBuyer");
+        near_sdk::require!(
             !self.purchases_by_quote.contains_key(&quote_id),
             "AlreadyPurchased"
         );
-        assert!(
+        near_sdk::require!(
             env::block_height() <= quote.expires_at_block,
             "QuoteExpired"
         );
-        assert_eq!(offer_id, quote.winner_offer_id, "NotWinner");
-        assert_eq!(winner.offer_id, offer_id, "WinnerMismatch");
-        assert_eq!(offer_hash(&winner), quote.offer_hashes[0], "OfferChanged");
-        assert!(
+        require_eq!(offer_id, quote.winner_offer_id, "NotWinner");
+        require_eq!(winner.offer_id, offer_id, "WinnerMismatch");
+        require_eq!(offer_hash(&winner), quote.offer_hashes[0], "OfferChanged");
+        near_sdk::require!(
             offer_is_valid(&winner, &quote.policy, quote.quote_block),
             "OfferInvalid"
         );
         assert_ne!(winner.seller, quote.buyer, "SelfPurchase");
         let amount = env::attached_deposit();
-        assert_eq!(amount.as_yoctonear(), winner.price.0, "WrongPayment");
+        require_eq!(amount.as_yoctonear(), winner.price.0, "WrongPayment");
 
         let purchase_id = self.next_purchase_id;
         self.next_purchase_id += 1;
@@ -116,7 +129,7 @@ impl CheckoutGate {
             Promise::new(winner.seller.clone()).transfer(NearToken::from_yoctonear(winner.price.0));
 
         let mark_args = serde_json::to_vec(&json!({ "quote_id": quote_id }))
-            .expect("mark_executed args cannot fail");
+            .unwrap_or_else(|_| near_sdk::env::panic_str("mark_executed args cannot fail"));
         let _ = Promise::new(self.offer_book.clone()).function_call(
             "mark_executed".to_string(),
             mark_args,
@@ -124,7 +137,7 @@ impl CheckoutGate {
             Gas::from_tgas(OFFER_BOOK_GAS_TGAS),
         );
         let sale_args = serde_json::to_vec(&json!({ "seller": winner.seller }))
-            .expect("record_sale args cannot fail");
+            .unwrap_or_else(|_| near_sdk::env::panic_str("record_sale args cannot fail"));
         let _ = Promise::new(self.offer_book.clone()).function_call(
             "record_sale".to_string(),
             sale_args,
@@ -169,13 +182,16 @@ impl CheckoutGate {
     }
 
     pub fn get_quote(&self, quote_id: QuoteId) -> Quote {
-        self.quotes.get(&quote_id).expect("QuoteNotFound").clone()
+        self.quotes
+            .get(&quote_id)
+            .unwrap_or_else(|| near_sdk::env::panic_str("QuoteNotFound"))
+            .clone()
     }
 
     pub fn get_winner_offer(&self, quote_id: QuoteId) -> Offer {
         self.winner_offers
             .get(&quote_id)
-            .expect("QuoteNotFound")
+            .unwrap_or_else(|| near_sdk::env::panic_str("QuoteNotFound"))
             .clone()
     }
 
@@ -186,14 +202,14 @@ impl CheckoutGate {
     pub fn get_purchase(&self, purchase_id: u64) -> PurchaseReceipt {
         self.receipts
             .get(&purchase_id)
-            .expect("PurchaseNotFound")
+            .unwrap_or_else(|| near_sdk::env::panic_str("PurchaseNotFound"))
             .clone()
     }
 
     pub fn get_purchase_by_quote(&self, quote_id: QuoteId) -> PurchaseReceipt {
         self.purchases_by_quote
             .get(&quote_id)
-            .expect("PurchaseNotFound")
+            .unwrap_or_else(|| near_sdk::env::panic_str("PurchaseNotFound"))
             .clone()
     }
 

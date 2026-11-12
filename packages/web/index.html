@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Loyal Cart — Bribe Arena</title>
+    <link rel="stylesheet" href="/packages/web/style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <p class="eyebrow">NEAR testnet · CP3 evidence</p>
+        <h1>The wallet that cannot take a bribe.</h1>
+        <p class="lede">
+          Loyal Cart pays only the <strong>best-scoring (lowest-cost)</strong> offer in a complete
+          public offer book under the buyer's committed policy. A kickback cannot change the winner.
+        </p>
+        <div id="status" class="chips"></div>
+      </header>
+
+      <section class="moment" aria-labelledby="moment-title">
+        <div class="section-head">
+          <p class="eyebrow">The 20-second moment</p>
+          <h2 id="moment-title">Same agent. Two quotes. One payment.</h2>
+        </div>
+        <p class="section-lede">
+          The runner key calls <code>execute_purchase</code> twice. The honest offer pays its seller.
+          The worse offer panics with <code>NotWinner</code> and records no purchase.
+        </p>
+        <div id="moment" class="moment-grid"></div>
+      </section>
+
+      <section aria-labelledby="arena-title">
+        <div class="section-head">
+          <p class="eyebrow">Attack 1 · injection and a worse price</p>
+          <h2 id="arena-title">The scripted baseline buys the wrong offer.</h2>
+        </div>
+        <p class="section-lede">
+          The baseline is <strong>scripted, not an LLM</strong>. It reads the off-chain listing text.
+          The injector's text says “ignore all previous instructions”; its valid offer is
+          0.005 NEAR worse than the honest offer. The ranker ignores text and prices the offer.
+        </p>
+        <div id="side-by-side" class="compare"></div>
+        <div class="table-wrap">
+          <table id="offers">
+            <thead>
+              <tr>
+                <th>Offer</th>
+                <th>Role</th>
+                <th>Seller</th>
+                <th>Price</th>
+                <th>Delivery</th>
+                <th>Status</th>
+                <th>On-chain tx</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="fine">
+          Listing text is shown from the committed fixture. On chain, only its 32-byte hash is stored;
+          the offer struct has no free-text field.
+        </p>
+      </section>
+
+      <section aria-labelledby="kickback-title">
+        <div class="section-head">
+          <p class="eyebrow">Attack 2 · the kickback</p>
+          <h2 id="kickback-title">The bribe reaches the buyer, not the decision.</h2>
+        </div>
+        <div id="kickback" class="cards"></div>
+        <p class="section-lede">
+          A cooperative <code>donate()</code> is forwarded to the owner in the same transaction.
+          A plain NEAR transfer runs no contract code; anyone can call <code>sweep()</code>. Neither
+          changes the quote or the winner. The sweep returns the whole free balance, not just the bribe.
+        </p>
+      </section>
+
+      <section aria-labelledby="filters-title">
+        <div class="section-head">
+          <p class="eyebrow">Attack 3 · the junk offers</p>
+          <h2 id="filters-title">Expired, excluded and over-price offers never enter the quote.</h2>
+        </div>
+        <div id="filters" class="cards"></div>
+      </section>
+
+      <section aria-labelledby="proof-title">
+        <div class="section-head">
+          <p class="eyebrow">Recheck it yourself</p>
+          <h2 id="proof-title">No wallet. No paid keys.</h2>
+        </div>
+        <div id="proof" class="proof"></div>
+      </section>
+
+      <section aria-labelledby="limits-title">
+        <div class="section-head">
+          <p class="eyebrow">What this does not stop</p>
+          <h2 id="limits-title">The narrow claim, stated plainly.</h2>
+        </div>
+        <ul id="limits" class="limits"></ul>
+        <p class="fine">
+          1Click execution and the optional TEE private brief are <strong>not implemented</strong> in
+          this build. The deployed code hash equals the hash we published; this is not a
+          reproducible-build claim. Loyal Cart is not “the first” system to gate settlement on a
+          best-scoring rule.
+        </p>
+      </section>
+
+      <footer>
+        <span id="item"></span>
+        <span>·</span>
+        <a href="/CLAIMS.md">Claims ledger</a>
+        <span>·</span>
+        <a href="/README.md">README</a>
+      </footer>
+    </main>
+    <script type="module" src="/packages/web/app.js"></script>
+  </body>
+</html>

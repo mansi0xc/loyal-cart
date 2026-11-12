@@ -7,6 +7,8 @@
   "scripts": {
     "verify": "node packages/verifier/verify.mjs --fixture fixtures/arena.json",
     "arena": "node packages/arena/arena.mjs --fixture fixtures/arena.json",
+    "arena:testnet": "node scripts/testnet/replay.mjs",
+    "ui": "node scripts/serve.mjs",
     "test": "node --test packages/verifier/test/*.test.mjs packages/arena/test/*.test.mjs"
   },
   "engines": {

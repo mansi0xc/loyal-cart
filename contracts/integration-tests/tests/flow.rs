@@ -190,6 +190,22 @@ async fn quote_checkout_kickback_and_non_winner_refusal() -> Result<()> {
     assert_eq!(purchase["amount"], json!(price_json(10)));
 
     create_quote(&owner, &agent_account, hash).await?;
+    let mut quote_2_ready = false;
+    for _ in 0..20 {
+        quote_2_ready = gate
+            .view("has_quote")
+            .args_json(json!({ "quote_id": 2 }))
+            .await?
+            .json()?;
+        if quote_2_ready {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+    }
+    assert!(
+        quote_2_ready,
+        "the gate must register quote 2 before the refusal"
+    );
     let seller_before_refusal = worker.view_account(seller.id()).await?.balance;
     let refusal = agent
         .call(agent_account.id(), "execute_purchase")
@@ -209,6 +225,10 @@ async fn quote_checkout_kickback_and_non_winner_refusal() -> Result<()> {
     assert!(
         failed,
         "the gate must fail the non-winner promise; receipts: {refusal_debug}"
+    );
+    assert!(
+        refusal_debug.contains("NotWinner"),
+        "the refusal must name NotWinner; receipts: {refusal_debug}"
     );
     let has_purchase: bool = gate
         .view("has_purchase")
