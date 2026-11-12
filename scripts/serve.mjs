@@ -8,6 +8,9 @@ const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
   ".json": "application/json; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",
   ".wasm": "application/wasm",
@@ -15,7 +18,11 @@ const types = {
 
 createServer((request, response) => {
   const url = new URL(request.url ?? "/", `http://localhost:${port}`);
-  const requested = url.pathname === "/" ? "/packages/web/index.html" : url.pathname;
+  if (url.pathname === "/") {
+    response.writeHead(302, { location: "/packages/web/" }).end();
+    return;
+  }
+  const requested = url.pathname.endsWith("/") ? `${url.pathname}index.html` : url.pathname;
   const path = resolve(join(root, normalize(requested)));
   if (!path.startsWith(root)) {
     response.writeHead(403).end("forbidden");

@@ -47,18 +47,18 @@ make verify           # dependency-free verifier on the committed quote fixture
 make arena            # deterministic Bribe Arena fixture
 npm run arena:testnet # re-fetches every tx in artifacts/arena-testnet.json (no keys)
 make test-integration # builds wasm, then runs the near-workspaces sandbox flow
-npm run ui            # CP3 web UI at http://localhost:4173 from artifacts/arena-testnet.json
+npm run ui            # interactive page at http://localhost:4173 from artifacts/arena-testnet.json
 ```
 
 | Do this | See this |
 |---|---|
-| `make test` | 41 Rust unit tests and 15 Node tests pass |
+| `make test` | 41 Rust unit tests and 17 Node tests pass |
 | `make verify` | `OVERALL: PASS` for the committed quote fixture |
 | `make arena` | three attacks pass, fixed seed, no chain |
 | `npm run arena:testnet` | 22 checks re-fetched from chain, all PASS |
 | `make test-integration` | 1 sandbox pass; refusal message contains `NotWinner` (needs `ulimit -n 65535` on some machines) |
 | `node packages/verifier/lock-check.mjs --contract offerbook3… --expected-code-hash fb94…` | 0 keys; wasm hash matches |
-| `npm run ui` | CP3 UI at `http://localhost:4173`; the two tx cards and the three attacks |
+| `npm run ui` | interactive page at `http://localhost:4173`: try to bribe, inject or out-compete the recorded offers; the two payments are re-read live from testnet |
 
 `make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails with an on-chain `NotWinner` message and without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. On some machines the sandbox needs `ulimit -n 65535`; this test is optional and the testnet transactions below are the same evidence. Testnet is deployed and locked (see below).
 
@@ -144,7 +144,7 @@ contracts/agent-account/ budget, scoped agent key, kickback forwarding
 contracts/integration-tests/ near-workspaces sandbox flow
 packages/verifier/       dependency-free Node best-scoring (lowest cost) verifier
 packages/arena/          deterministic Bribe Arena
-packages/web/            CP3 web UI (npm run ui)
+packages/web/            interactive web page (npm run ui)
 scripts/                 UI server, testnet replay, deploy checklist
 docs/                    threat model, demo, worklogs
 fixtures/                committed quote/arena fixtures

@@ -3,117 +3,266 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Loyal Cart — Bribe Arena</title>
-    <link rel="stylesheet" href="/packages/web/style.css" />
+    <title>Loyal Cart: the checkout a bribe can't change</title>
+    <meta name="description" content="A NEAR testnet prototype: the checkout pays only the best-scoring offer in a public offer book under the buyer's committed policy. Try to sneak a bribe onto the bill." />
+    <meta name="theme-color" content="#d9d3c7" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=VT323&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M6 3h20v26l-3.3-2-3.4 2-3.3-2-3.3 2-3.4-2L6 29z' fill='%23fbfaf5' stroke='%231c1a17' stroke-width='2'/%3E%3Cpath d='M10 10h12M10 15h12M10 20h7' stroke='%231c1a17' stroke-width='2'/%3E%3C/svg%3E" />
   </head>
   <body>
-    <main>
-      <header class="hero">
-        <p class="eyebrow">Recorded testnet run · 12 Nov 2026</p>
-        <h1>The checkout a bribe can't change.</h1>
+    <header class="bar">
+      <a class="brand" href="#top">LOYAL CART <span>▌</span> CHECKOUT GATE</a>
+      <nav aria-label="Sections">
+        <a href="#try">Try it</a>
+        <a href="#proof">Receipts</a>
+        <a href="#how">How</a>
+        <a href="#fine">Fine print</a>
+      </nav>
+      <span class="live" id="liveBlock" title="Latest final block on NEAR testnet"><i></i><b>testnet</b></span>
+    </header>
+
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow">NEAR testnet prototype · recorded run, 12 Nov 2026</p>
+        <h1>Every purchase, itemised. <i>No line for bribes.</i></h1>
         <p class="lede">
-          Loyal Cart pays only the <strong>best-scoring (lowest-cost)</strong> offer in a complete
-          public offer book under the buyer's committed policy. A kickback cannot change the winner.
+          The checkout pays only the best-scoring offer in a complete public offer book, under a scoring policy the buyer
+          committed before any quote existed. Try to sneak something onto the bill. It won't print.
         </p>
-        <div id="status" class="chips"></div>
-      </header>
-
-      <section class="moment" aria-labelledby="moment-title">
-        <div class="section-head">
-          <p class="eyebrow">The 20-second moment</p>
-          <h2 id="moment-title">Same agent. Two quotes. One payment.</h2>
+        <div class="btns">
+          <a class="btn dark" href="#try">Try to bribe it →</a>
+          <a class="btn" href="#proof">Read the real receipts</a>
         </div>
-        <p class="section-lede">
-          The runner key calls <code>execute_purchase</code> twice. The honest offer pays its seller.
-          The worse offer panics with <code>NotWinner</code> and records no purchase.
-        </p>
-        <div id="moment" class="moment-grid"></div>
+        <ul class="facts" id="facts">
+          <li data-live="ob"><b>0</b><span>keys on OfferBook</span><i>recorded</i></li>
+          <li data-live="cg"><b>0</b><span>keys on CheckoutGate</span><i>recorded</i></li>
+          <li data-live="code"><b>✓</b><span>code hash = published</span><i>recorded</i></li>
+        </ul>
+      </div>
+      <div class="hero-till" aria-label="A printed receipt of the recorded quote: offer 26 from honest-a is paid 0.1 NEAR; offer 30 is stamped not winner">
+        <div class="printer"><i></i></div>
+        <div class="paper-wrap"><div class="receipt feed" id="heroReceipt"></div></div>
+      </div>
+    </section>
+
+    <main>
+      <!-- 1. Arena -->
+      <section class="arena" id="try">
+        <div class="head">
+          <p class="eyebrow">01 · Try to cheat it</p>
+          <h2>Sneak something onto the bill.</h2>
+          <p class="sub">
+            These are the seven real offers posted on testnet for <code id="itemId">gpu-hour</code>, ranked by the same rule the
+            contract uses. The ranking runs in your browser and is tested against the verifier. Every change reprints the receipt.
+          </p>
+        </div>
+
+        <div class="arena-grid">
+          <div class="levers">
+            <div class="tabs" role="tablist" aria-label="Attacks">
+              <button role="tab" class="tab on" data-tab="bribe" aria-selected="true"><span>01</span>Bribe</button>
+              <button role="tab" class="tab" data-tab="inject" aria-selected="false"><span>02</span>Inject</button>
+              <button role="tab" class="tab" data-tab="compete" aria-selected="false"><span>03</span>Undercut</button>
+            </div>
+
+            <div class="pane on" data-pane="bribe" role="tabpanel">
+              <h3>Offer the agent a kickback</h3>
+              <p>The crooked merchant promises the agent a tip if it buys their offer. Make it generous.</p>
+              <label class="slider">
+                <span>Kickback</span>
+                <input type="range" id="bribe" min="0" max="100" step="1" value="0" />
+                <output id="bribeOut">0 NEAR</output>
+              </label>
+              <p class="note" id="bribeExplain">
+                The score has three inputs: price, delivery and seller history. There is no input for a kickback, so there is
+                nothing for it to move.
+              </p>
+            </div>
+
+            <div class="pane" data-pane="inject" role="tabpanel" hidden>
+              <h3>Hide an instruction in the listing</h3>
+              <p>Edit the injector's listing text. Make it as persuasive as you like.</p>
+              <textarea id="inject" rows="3" spellcheck="false" aria-label="Injector listing text"></textarea>
+              <div class="versus">
+                <div class="bad"><span>Scripted baseline (no LLM)</span><b id="naivePick">picks #30</b></div>
+                <div class="good"><span>Loyal Cart</span><b id="lcPick">pays #26</b></div>
+              </div>
+              <p class="note">
+                On chain the offer stores only a 32-byte hash of its listing. The ranker never reads the text, so the words can't
+                reach the decision.
+              </p>
+            </div>
+
+            <div class="pane" data-pane="compete" role="tabpanel" hidden>
+              <h3>Now do it the honest way</h3>
+              <p>Let the crooked merchant cut its price instead. A better offer <em>should</em> win.</p>
+              <label class="slider">
+                <span>Crooked's price</span>
+                <input type="range" id="price" min="60" max="140" step="1" value="120" />
+                <output id="priceOut">0.120 NEAR</output>
+              </label>
+              <p class="note" id="competeExplain">Drag below about 0.099 NEAR and the crooked merchant wins, fairly.</p>
+            </div>
+
+            <div class="tally" aria-label="Winner changes">
+              <div><b id="tBribe">0</b><span>winner changes from bribes</span></div>
+              <div><b id="tInject">0</b><span>from injected text</span></div>
+              <div><b id="tCompete">0</b><span>from a better price</span></div>
+            </div>
+          </div>
+
+          <div class="arena-till">
+            <div class="printer"><i></i></div>
+            <div class="paper-wrap">
+              <div class="receipt" id="arenaReceipt" aria-live="polite">
+                <div class="c big">LOYAL CART</div>
+                <div class="c dim" id="arHead">QUOTE #2 · REPRINT 1</div>
+                <div class="c dim">policy <span id="policyShort">2959b6..</span> · committed</div>
+                <div class="c dim small">score = 60·price + 20·days + 20·(100−sales)</div>
+                <div class="c dim small">lowest wins</div>
+                <hr />
+                <ol class="lines" id="ranks"></ol>
+                <hr />
+                <div id="filtered"></div>
+                <hr />
+                <div id="arExtras"></div>
+                <hr />
+                <div class="row big"><span id="arPaid">PAY #26</span><span id="arAmt">0.100 N</span></div>
+                <div class="c dim small">tap PAY on a line to try the gate · simulated</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section aria-labelledby="arena-title">
-        <div class="section-head">
-          <p class="eyebrow">Attack 1 · injection and a worse price</p>
-          <h2 id="arena-title">The scripted baseline buys the wrong offer.</h2>
+      <!-- 2. Real receipts -->
+      <section class="proof" id="proof">
+        <div class="head">
+          <p class="eyebrow">02 · It happened on chain</p>
+          <h2>Same agent. Two payments. <i>One refusal.</i></h2>
+          <p class="sub">
+            The agent's key called <code>execute_purchase</code> twice. When you scroll here, this page re-reads both transactions
+            from NEAR testnet and prints what it finds. You don't have to take our word for it.
+          </p>
         </div>
-        <p class="section-lede">
-          The baseline is <strong>scripted, not an LLM</strong>. It reads the off-chain listing text.
-          The injector's text says “ignore all previous instructions”; its valid offer is
-          0.005 NEAR worse than the honest offer. The ranker ignores text and prices the offer.
-        </p>
-        <div id="side-by-side" class="compare"></div>
-        <div class="table-wrap">
-          <table id="offers">
-            <thead>
-              <tr>
-                <th>Offer</th>
-                <th>Role</th>
-                <th>Seller</th>
-                <th>Price</th>
-                <th>Delivery</th>
-                <th>Status</th>
-                <th>On-chain tx</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div class="proof-grid" id="proofGrid">
+          <article class="tx" id="txWin">
+            <div class="receipt slim">
+              <div class="c big">PURCHASE 1</div>
+              <div class="c dim" data-state>waiting</div>
+              <hr />
+              <div class="tlines" data-term></div>
+              <hr />
+              <div class="row big"><span>TO SELLER</span><span><b data-amount>0.1</b> N</span></div>
+              <a class="tx-link" data-link target="_blank" rel="noreferrer">open in explorer ↗</a>
+            </div>
+            <div class="stamp ink" data-stamp>PAID · #26</div>
+          </article>
+          <article class="tx" id="txRefuse">
+            <div class="receipt slim">
+              <div class="c big">PURCHASE 2</div>
+              <div class="c dim" data-state>waiting</div>
+              <hr />
+              <div class="tlines" data-term></div>
+              <hr />
+              <div class="row big"><span>TO SELLER</span><span><b data-amount>0</b> N</span></div>
+              <a class="tx-link" data-link target="_blank" rel="noreferrer">open in explorer ↗</a>
+            </div>
+            <div class="stamp red" data-stamp>NOT WINNER · #30</div>
+          </article>
         </div>
-        <p class="fine">
-          Listing text is shown from the committed fixture. On chain, only its 32-byte hash is stored;
-          the offer struct has no free-text field.
-        </p>
       </section>
 
-      <section aria-labelledby="kickback-title">
-        <div class="section-head">
-          <p class="eyebrow">Attack 2 · the kickback</p>
-          <h2 id="kickback-title">The bribe reaches the buyer, not the decision.</h2>
+      <!-- 3. How -->
+      <section class="how" id="how">
+        <div class="head">
+          <p class="eyebrow">03 · How it works</p>
+          <h2>Four checks, <i>each one a no.</i></h2>
         </div>
-        <div id="kickback" class="cards"></div>
-        <p class="section-lede">
-          A cooperative <code>donate()</code> is forwarded to the owner in the same transaction.
-          A plain NEAR transfer runs no contract code; anyone can call <code>sweep()</code>. Neither
-          changes the quote or the winner. The sweep returns the whole free balance, not just the bribe.
-        </p>
+        <ol class="stubs">
+          <li>
+            <span class="n">01</span>
+            <h3>Public offer book</h3>
+            <p>Merchants post fixed fields: price, delivery, expiry. No free text on chain. Locked, 0 keys.</p>
+          </li>
+          <li>
+            <span class="n">02</span>
+            <h3>Committed policy</h3>
+            <p>The buyer commits a hash of the scoring weights once, one-way, before any quote exists.</p>
+          </li>
+          <li>
+            <span class="n">03</span>
+            <h3>Quote snapshot</h3>
+            <p>The book snapshots <em>every</em> valid offer for the item. The agent can't choose the list.</p>
+          </li>
+          <li>
+            <span class="n">04</span>
+            <h3>Checkout gate</h3>
+            <p>Pays the seller only if the chosen offer is the quote's winner. Anything else: <code>NotWinner</code>.</p>
+          </li>
+        </ol>
+        <div class="tips">
+          <div>
+            <h3>And the bribe money itself?</h3>
+            <p>It can't change the winner, and NEAR sent to the agent account ends up with the buyer.</p>
+          </div>
+          <div class="slips" id="bribePath"></div>
+        </div>
       </section>
 
-      <section aria-labelledby="filters-title">
-        <div class="section-head">
-          <p class="eyebrow">Attack 3 · the junk offers</p>
-          <h2 id="filters-title">Expired, excluded and over-price offers never enter the quote.</h2>
+      <!-- 4. Recheck -->
+      <section class="recheck" id="recheck">
+        <div class="head">
+          <p class="eyebrow">04 · Recheck it yourself</p>
+          <h2>No wallet. No keys. <i>Three commands.</i></h2>
         </div>
-        <div id="filters" class="cards"></div>
+        <div class="cmds">
+          <div class="cmd"><span>Replay the whole testnet run</span><code>npm run arena:testnet</code><button data-copy="npm run arena:testnet">Copy</button></div>
+          <div class="cmd"><span>Verify the refused purchase</span><code id="cmdTx">node packages/verifier/verify.mjs --tx …</code><button id="copyTx">Copy</button></div>
+          <div class="cmd"><span>Run every test</span><code>make test</code><button data-copy="make test">Copy</button></div>
+        </div>
+        <details class="hashes">
+          <summary>Hashes and accounts</summary>
+          <dl id="hashes"></dl>
+        </details>
       </section>
 
-      <section aria-labelledby="proof-title">
-        <div class="section-head">
-          <p class="eyebrow">Recheck it yourself</p>
-          <h2 id="proof-title">No wallet. No paid keys.</h2>
+      <!-- 5. Fine print -->
+      <section class="fine" id="fine">
+        <div class="fine-paper">
+          <p class="eyebrow">05 · The fine print</p>
+          <h2>What this does not stop.</h2>
+          <ol>
+            <li>If the agent simply never buys, nothing on chain records that. The design controls <em>what</em> a purchase pays, not whether one happens.</li>
+            <li>The buyer's own full-access key is the root of trust: whoever holds it can redeploy the agent account and move its balance. <code>donate</code> and <code>sweep</code> only bind while that key is safe.</li>
+            <li>One live offer per seller per item stops a single spam account, but a funded attacker with many accounts can still fill the 64-offer cap.</li>
+            <li>NEP-141 token kickbacks are not forwarded; the demo uses native NEAR. Bribes paid to the operator off chain are out of scope.</li>
+            <li>The "naive agent" is a scripted baseline, not an LLM. The merchants are sub-accounts we created, each with its own key.</li>
+            <li>The deployed code hash equals the hash we published. A byte-reproducible build is not done yet.</li>
+          </ol>
+          <p class="prior">
+            Not the first: Gebele et al. (DeFi '25) gate settlement on a best-scoring rule inside a TEE. Loyal Cart does it over a
+            public offer book with a buyer-authored policy and no TEE. More in
+            <a href="https://github.com/mansi0xc/loyal-cart/blob/main/docs/RELATED-WORK.md">related work</a>.
+          </p>
         </div>
-        <div id="proof" class="proof"></div>
       </section>
-
-      <section aria-labelledby="limits-title">
-        <div class="section-head">
-          <p class="eyebrow">What this does not stop</p>
-          <h2 id="limits-title">The narrow claim, stated plainly.</h2>
-        </div>
-        <ul id="limits" class="limits"></ul>
-        <p class="fine">
-          1Click execution and the optional TEE private brief are <strong>not implemented</strong> in
-          this build. The deployed code hash equals the hash we published; this is not a
-          reproducible-build claim. Loyal Cart is not “the first” system to gate settlement on a
-          best-scoring rule.
-        </p>
-      </section>
-
-      <footer>
-        <span id="item"></span>
-        <span>·</span>
-        <a href="/CLAIMS.md">Claims ledger</a>
-        <span>·</span>
-        <a href="/README.md">README</a>
-      </footer>
     </main>
-    <script type="module" src="/packages/web/app.js"></script>
+
+    <footer class="foot">
+      <div class="thanks">*** THANK YOU · NO BRIBES ACCEPTED ***</div>
+      <p>A testnet prototype. Every number on this page comes from <code>artifacts/arena-testnet.json</code> or a live testnet read.</p>
+      <nav>
+        <a href="https://github.com/mansi0xc/loyal-cart">GitHub ↗</a>
+        <a href="https://github.com/mansi0xc/loyal-cart/blob/main/CLAIMS.md">Claims ledger ↗</a>
+        <a href="https://github.com/mansi0xc/pinned">Sister project: Pinned ↗</a>
+      </nav>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="app.js"></script>
   </body>
 </html>
