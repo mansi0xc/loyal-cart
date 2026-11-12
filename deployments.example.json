@@ -1,0 +1,22 @@
+{
+  "network": "testnet",
+  "rpc": "https://rpc.testnet.near.org",
+  "offer_book": {
+    "account": "offerbook.<parent>.testnet",
+    "wasm_sha256": "<sha256 of offer_book.wasm>"
+  },
+  "checkout_gate": {
+    "account": "checkout.<parent>.testnet",
+    "wasm_sha256": "<sha256 of checkout_gate.wasm>"
+  },
+  "agent_account": {
+    "account": "agent.<parent>.testnet",
+    "owner": "<owner>.testnet",
+    "agent": "<agent>.testnet"
+  },
+  "notes": [
+    "OfferBook and CheckoutGate full-access keys are deleted after init; AgentAccount stays owner-controlled.",
+    "Publish these addresses and hashes in the README after deployment.",
+    "This file is a template until CP2 deployment; do not present it as a live deployment."
+  ]
+}
