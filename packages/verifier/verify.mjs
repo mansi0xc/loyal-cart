@@ -10,50 +10,62 @@ const argValue = (name, fallback) => {
 };
 
 const fixturePath = resolve(argValue("--fixture", "fixtures/arena.json"));
-const rpc = argValue("--rpc", "");
+const rpcArg = argValue("--rpc", "");
+const rpcCandidates = [...new Set([rpcArg, "https://rpc.testnet.fastnear.com", "https://rpc.testnet.near.org"].filter(Boolean))];
+let rpc = "";
 const offerBook = argValue("--offer-book", "");
 const quoteArg = argValue("--quote", "");
 const txHash = argValue("--tx", "");
 const txSender = argValue("--sender", "");
 
-const rpcCall = async (method, params) => {
-  const response = await fetch(rpc, {
+const callRpc = async (url, method, params) => {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(8000),
   });
   const json = await response.json();
   if (json.error) throw new Error(json.error.message);
   return json.result;
 };
+const selectRpc = async () => {
+  const errors = [];
+  for (const candidate of rpcCandidates) {
+    try {
+      const block = await callRpc(candidate, "block", { finality: "final" });
+      if (!block?.header?.height) throw new Error("no final block header");
+      rpc = candidate;
+      console.log(`rpc=${candidate} (final block ${block.header.height})`);
+      return;
+    } catch (error) {
+      errors.push(`${candidate}: ${error.message}`);
+    }
+  }
+  throw new Error(`no RPC answered: ${errors.join("; ")}`);
+};
+const rpcCall = (method, params) => {
+  if (!rpc) throw new Error("RPC not selected");
+  return callRpc(rpc, method, params);
+};
 
 const query = async (methodName, args) => {
-  const response = await fetch(rpc, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "query",
-      params: {
-        request_type: "call_function",
-        finality: "final",
-        account_id: offerBook,
-        method_name: methodName,
-        args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
-      },
-    }),
+  const result = await rpcCall("query", {
+    request_type: "call_function",
+    finality: "final",
+    account_id: offerBook,
+    method_name: methodName,
+    args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
   });
-  const json = await response.json();
-  if (json.error) throw new Error(json.error.message);
-  return JSON.parse(Buffer.from(json.result.result).toString());
+  return JSON.parse(Buffer.from(result.result).toString());
 };
 
 let fixture;
 let source;
 let txCheck = null;
-if (rpc && offerBook && quoteArg) {
+if (offerBook && quoteArg) {
   try {
+    await selectRpc();
     const quote = await query("get_quote", { quote_id: Number(quoteArg) });
     let chosenOfferId = quote.winner_offer_id;
     if (txHash) {

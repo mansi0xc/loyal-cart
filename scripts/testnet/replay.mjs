@@ -8,21 +8,43 @@ const value = (name, fallback) => {
   const index = args.indexOf(name);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
 };
-const rpcUrl = value("--rpc", "https://rpc.testnet.fastnear.com");
+const rpcArg = value("--rpc", "");
+const rpcCandidates = [...new Set([rpcArg, "https://rpc.testnet.fastnear.com", "https://rpc.testnet.near.org"].filter(Boolean))];
+let rpcUrl = "";
 const artifactPath = resolve(value("--artifact", "artifacts/arena-testnet.json"));
 const checks = [];
 const add = (ok, name, detail) => checks.push({ ok, name, detail });
 const fail = (name, detail) => add(false, name, detail);
 
-const rpc = async (method, params) => {
-  const response = await fetch(rpcUrl, {
+const callRpc = async (url, method, params) => {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(8000),
   });
   const json = await response.json();
   if (json.error) throw new Error(`${method}: ${json.error.message ?? JSON.stringify(json.error)}`);
   return json.result;
+};
+const selectRpc = async () => {
+  const errors = [];
+  for (const candidate of rpcCandidates) {
+    try {
+      const block = await callRpc(candidate, "block", { finality: "final" });
+      if (!block?.header?.height) throw new Error("no final block header");
+      rpcUrl = candidate;
+      console.log(`rpc=${candidate} (final block ${block.header.height})`);
+      return;
+    } catch (error) {
+      errors.push(`${candidate}: ${error.message}`);
+    }
+  }
+  throw new Error(`no RPC answered: ${errors.join("; ")}`);
+};
+const rpc = (method, params) => {
+  if (!rpcUrl) throw new Error("RPC not selected");
+  return callRpc(rpcUrl, method, params);
 };
 const query = (params) => rpc("query", { finality: "final", ...params });
 const view = async (account_id, method_name, args = {}) => {
@@ -53,6 +75,7 @@ try {
 }
 
 try {
+  await selectRpc();
   const accounts = artifact.accounts;
 
   const offerBookCode = await query({ request_type: "view_code", account_id: accounts.offerbook });

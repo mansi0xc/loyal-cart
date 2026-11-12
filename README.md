@@ -48,6 +48,16 @@ make test-integration # builds wasm, then runs the near-workspaces sandbox flow
 npm run ui            # CP3 web UI at http://localhost:4173 from artifacts/arena-testnet.json
 ```
 
+| Do this | See this |
+|---|---|
+| `make test` | 41 Rust unit tests and 15 Node tests pass |
+| `make verify` | `OVERALL: PASS` for the committed quote fixture |
+| `make arena` | three attacks pass, fixed seed, no chain |
+| `npm run arena:testnet` | 22 checks re-fetched from chain, all PASS |
+| `make test-integration` | 1 sandbox pass; refusal message contains `NotWinner` (needs `ulimit -n 65535` on some machines) |
+| `node packages/verifier/lock-check.mjs --contract offerbook3… --expected-code-hash fb94…` | 0 keys; wasm hash matches |
+| `npm run ui` | CP3 UI at `http://localhost:4173`; the two tx cards and the three attacks |
+
 `make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails with an on-chain `NotWinner` message and without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. On some machines the sandbox needs `ulimit -n 65535`; this test is optional and the testnet transactions below are the same evidence. Testnet is deployed and locked (see below).
 
 ## Live testnet (CP3, deployed 2026-11-12)
@@ -101,7 +111,7 @@ node packages/verifier/verify.mjs --rpc https://rpc.testnet.fastnear.com \
   --tx 4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX --sender lc-111206284835-runner.testnet
 ```
 
-Both print PASS, including `tx_outcome_matches_book`; the refusal run also checks that the failure names `NotWinner`. The verifier needs no wallet.
+Both print PASS, including `tx_outcome_matches_book`; the refusal run also checks that the failure names `NotWinner`. The verifier needs no wallet. `--rpc` is optional: without it, live verification and `npm run arena:testnet` try FastNEAR, then `rpc.testnet.near.org`, and print which provider answered.
 
 ## Agent baseline (honest label)
 
@@ -170,11 +180,15 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **A full-access key on the agent account defeats forwarding.** A contract account with a full-access key can be deleted and its balance sent anywhere. `donate`/`sweep` only bind if no such key exists.
 - **Kickback capture is NEAR-only.** A NEP-141 `ft_transfer` to a contract account does not call `ft_on_transfer`; a token plain transfer is not forwarded by `donate`.
 - **The user's own key is the root of trust.** Whoever holds it can rewrite the policy, sweep the budget, or delete the agent account. No recovery, multisig or time lock in v0.1.
-- **TEE trust, if the optional private brief is used.** NEAR AI Cloud or OutLayer plus a hardware vendor must be trusted. The base claim does not require it.
+- **The TEE private brief is not implemented.** No NEAR AI Cloud or OutLayer path ships in this build; the base claim does not require it.
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation.
-- **RPC and external services.** Testnet, the RPC and 1Click are external dependencies; a recorded artifact is a recording, not a live run.
-- **1Click dry quotes.** The testnet demo shows a quote, not a mainnet execution.
-- **The testnet flow is verified; these are not.** The CP3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the optional TEE brief and agent key rotation are not implemented. The F5 one-live-offer half is done; the refundable storage deposit is not.
+- **RPC is external.** Testnet and the RPC are dependencies; a recorded artifact is a recording, not a live run.
+- **1Click is not implemented.** No quote or panel is shown; cut at CP3.
+- **The testnet flow is verified; these are not.** The CP3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the TEE brief and agent key rotation are not implemented. F5's one-live-offer half is done; the refundable storage deposit is not. The build is not byte-reproducible (C12 is ATTESTED).
+- **The merchants are owner-created subaccounts.** They have distinct accounts and keys, and the winner is not the owner, but they are demo actors created and funded by the owner. The faucet rate-limited top-level creation.
+- **Deploy and deposit tx hashes are not recorded.** The CP3 deploy script captured them only in memory. The code hashes, zero-key state, policy commit and every arena tx are recorded.
+- **Extra offers from failed attempts remain.** Offers for `gpu-hour`, `gpu-hour-cp3` and `gpu-hour-cp3-final` are on testnet but not in the `gpu-hour-cp3-final3` quote. The contract has no retire method.
+- **The baseline is scripted, not an LLM.** The UI and README label it; the security claim does not depend on a model.
 
 The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 
