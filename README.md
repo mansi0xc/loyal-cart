@@ -194,6 +194,10 @@ The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 
 ---
 
+## Companion project
+
+**Pinned** is the second project: a generation-pinned payment router for rentable names, in `../pinned/` (separate repository). It has its own README, claims ledger and testnet evidence.
+
 ## License
 
 MIT. See `LICENSE`.
