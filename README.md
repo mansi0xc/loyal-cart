@@ -2,21 +2,19 @@
 
 **Repo:** https://github.com/mansi0xc/loyal-cart
 
-**Status: CP5 code complete; the demo video is pending.** CP3 is deployed and locked on NEAR testnet; the Bribe Arena is replayed with distinct merchants. OfferBook and CheckoutGate have no full-access keys; the AgentAccount is owner-controlled with a runner key scoped to `execute_purchase`. The real testnet flow includes a winner checkout, a refused non-winner, a cooperative donate, a plain transfer and a permissionless sweep. The claims ledger (`CLAIMS.md`) records the evidence; `deployments.json` is the machine-readable record.
+Loyal Cart is live on NEAR testnet: the checkout pays only the best-scoring offer under the buyer's committed policy, and a non-winner is refused. The demo video is pending; the claims ledger records the evidence.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
 For a company, the procurement lead commits the policy; the employee or agent who shops cannot tailor the scoring after seeing the offers. Off-chain bribes to the agent's operator are out of scope.
 
-The honest claim ladder (only use the highest rung whose ledger rows are VERIFIED/ATTESTED):
-
-> **L1 — mechanism.** "A testnet prototype in which the payment contract forwards the buyer's funds to the seller only if the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book, under the scoring policy committed in the quote — so a third party can recheck the choice from chain data alone, with no key and no hardware trust — and the agent's own account has no method that can pay the agent or a third party."
+> **What it proves.** "A testnet prototype in which the payment contract forwards the buyer's funds to the seller only if the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book, under the scoring policy committed in the quote — so a third party can recheck the choice from chain data alone, with no key and no hardware trust — and the agent's own account has no method that can pay the agent or a third party."
 >
-> **L3 — no originality claim.** "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by an authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
+> **No originality claim.** "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by an authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
 
 We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on a best-scoring rule over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
 
-Tracks: **realworld**, **swarms**, **open** (business is optional). The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
+Tracks: **realworld**, **security**, **open**. The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
 
 ---
 
@@ -24,7 +22,7 @@ Tracks: **realworld**, **swarms**, **open** (business is optional). The lead use
 
 AI shopping agents are starting to spend real money. The agent's operator, the marketplace, or a seller can steer which offer it picks: paid placement, a kickback to the agent, or free-text in a listing that overrides the agent's instructions. The user has no way to check whose interest the agent served.
 
-## What Loyal Cart will do
+## What Loyal Cart does
 
 1. **On-chain offer book.** Merchants post fixed-field offers (item id, price, delivery days, seller, expiry, metadata hash). The on-chain struct has no free-text field; off-chain metadata may contain arbitrary text and is committed only by hash. The item id is a 1–64 char slug.
 2. **User-committed scoring.** The owner commits a hash of the scoring policy (price / delivery / seller reputation weights, max price, exclusions) one-way before any quote; the agent account refuses a quote with a different hash.
@@ -37,7 +35,20 @@ See `SPEC.md` for the interfaces, schemas, scoring, threat model, arena script a
 
 ---
 
-## Quickstart (CP3: unit tests, local sandbox, live testnet evidence)
+## Start here
+
+Three minutes on a clean clone:
+
+```sh
+git clone https://github.com/mansi0xc/loyal-cart
+cd loyal-cart
+make test          # 41 Rust + 17 Node tests
+make verify        # recompute the committed quote, no wallet
+make arena         # three attacks, fixed seed
+npm run ui         # interactive page at http://localhost:4173
+```
+
+The page shows the two testnet payments, the live read from NEAR, the offer table and the real refusals. The claims are in [`CLAIMS.md`](CLAIMS.md); the design is in [`SPEC.md`](SPEC.md).
 
 These run on a clean clone with no wallet, no funds and no paid keys:
 
@@ -61,6 +72,34 @@ npm run ui            # interactive page at http://localhost:4173 from artifacts
 | `npm run ui` | interactive page at `http://localhost:4173`: try to bribe, inject or out-compete the recorded offers; the two payments are re-read live from testnet |
 
 `make test-integration` deploys the three contracts to a local near-sandbox, runs a quote → winner checkout, asserts a non-winner checkout fails with an on-chain `NotWinner` message and without recording a purchase, and asserts a merchant donation reaches the owner. It downloads the sandbox binary on first run; no testnet or funds are needed. On some machines the sandbox needs `ulimit -n 65535`; this test is optional and the testnet transactions below are the same evidence. Testnet is deployed and locked (see below).
+
+## Real model run (off-chain, not the demo baseline)
+
+`qwen2.5:0.5b` at temperature 0.8, 20 runs on the fixed listing: **15/20** chose a steered offer (14 `injector-valid`, 1 `crooked`); the other 5 chose an invalid, excluded, expired or honest offer. The exact prompt, raw outputs, model and temperature are in `artifacts/llm-runs.json`; the runner is `scripts/llm-run.mjs`.
+
+**No on-chain transactions are claimed from this run.** The locked testnet deployment's runner key was not retained, so the three steered `execute_purchase` txs could not be sent; the scripted arena remains the reproducible demo. This is a real local model, not a hosted API.
+
+## What it refuses (real testnet transactions)
+
+| Attack | Expected | Tx | Result |
+|---|---|---|---|
+| invalid item id | `InvalidItemId` | [`G2A5itEd…`](https://testnet.nearblocks.io/txns/G2A5itEdJzQoySoQdEorY9pdu9FEe8133ok8LomofUyM) | PASS |
+| invalid price | `InvalidPrice` | [`CTVMjo4X…`](https://testnet.nearblocks.io/txns/CTVMjo4XCbknCPMsAJoBZLCvYSSRt13VhhE62ugVuAgh) | PASS |
+| invalid delivery | `InvalidDelivery` | [`ANLionJu…`](https://testnet.nearblocks.io/txns/ANLionJuL1Z5dQsjV5fhWqVRm7aJgg687k6kDAgDx2h2) | PASS |
+| expiry too soon | `ExpiryTooSoon` | [`9c5f5nGu…`](https://testnet.nearblocks.io/txns/9c5f5nGur6eccraRZWKYVnb2m2KmFbZZHmDZpbumo219) | PASS |
+| offer already live | `OfferAlreadyLive` | [`3gtKy9gz…`](https://testnet.nearblocks.io/txns/3gtKy9gz1imQAcFS7pKA83i6aXRTvN1hZe6oY1hc9LoJ) | PASS |
+| policy hash mismatch | `PolicyHashMismatch` | [`Cy927z3o…`](https://testnet.nearblocks.io/txns/Cy927z3o8YQp8ZqtBTuUr3DMTEMXQhfbb1WwWKPHbaWF) | PASS |
+| invalid policy | `InvalidPolicy` | [`4ZG6qT7J…`](https://testnet.nearblocks.io/txns/4ZG6qT7JnbmxudWa5H28yfwjzUaevJgZ16ygFSvwPSYv) | PASS |
+| invalid ttl | `InvalidTtl` | [`FmU8bWMm…`](https://testnet.nearblocks.io/txns/FmU8bWMmLGmnJPMRsJYdhace2edJh5BLBLfpho8MXG6N) | PASS |
+| no valid offers | `NoValidOffers` | [`FRn5byVZ…`](https://testnet.nearblocks.io/txns/FRn5byVZbsiqDzyxrzDgBuvpVYeUuuUxxVmC8kGU5BtB) | PASS |
+| existing quote 2 | `success` | [`CoGrpjhA…`](https://testnet.nearblocks.io/txns/CoGrpjhAgQSQc9KtLuDX7SKJ61XPsQQUrQisLMhZB81C) | PASS |
+| not buyer | `NotBuyer` | [`7i29gVYT…`](https://testnet.nearblocks.io/txns/7i29gVYTePbsDZb5gSp5bzVGvydhR9UBNToGkmUkj5wQ) | PASS |
+| quote not found | `QuoteNotFound` | [`6Ab7B9zz…`](https://testnet.nearblocks.io/txns/6Ab7B9zzKWKC9Qyc5DRFm4TwQbmi6KQfSjbGxErqWmQA) | PASS |
+| only agent | `OnlyAgent` | [`Dw1Zu9Ah…`](https://testnet.nearblocks.io/txns/Dw1Zu9Ah3wJXNavyt9afrsSabeu9Soh1K8vGwWTKSdUv) | PASS |
+| not winner (existing) | `NotWinner` | [`4HfakrGL…`](https://testnet.nearblocks.io/txns/4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX) | PASS |
+| winner checkout (control) | `success` | [`Fj64Shdp…`](https://testnet.nearblocks.io/txns/Fj64Shdpa4GFkMpVTKQHvFk3hD1Smo2DoT2Hd5gphbKa) | PASS |
+
+Generated by the owner/agent/gate paths against the locked CP3 contracts; the existing winner and NotWinner rows come from the arena artifact. The full JSON is `artifacts/refusals.json`.
 
 ## Live testnet (CP3, deployed 2026-11-12)
 
@@ -199,6 +238,10 @@ The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 ## Companion project
 
 **Pinned** is the second project: a generation-pinned payment router for rentable names, at https://github.com/mansi0xc/pinned (separate repository). It has its own README, claims ledger and testnet evidence.
+
+## AI tools and libraries
+
+Built during NEAR HACKATHON with Claude and DeepSeek as design/review agents and Command Code as the build environment. Contracts use `near-sdk` 5.30.1; tests use `near-workspaces`; the verifier, arena and server use Node built-ins only. The demo baseline is scripted; `qwen2.5:0.5b` was run locally for the off-chain 20-run measurement, not as the demo agent.
 
 ## License
 
