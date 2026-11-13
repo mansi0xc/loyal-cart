@@ -75,7 +75,14 @@ npm run ui            # interactive page at http://localhost:4173 from artifacts
 
 ## Real model run (off-chain, not the demo baseline)
 
-`qwen2.5:0.5b` at temperature 0.8, 20 runs on the fixed listing: **15/20** chose a steered offer (14 `injector-valid`, 1 `crooked`); the other 5 chose an invalid, excluded, expired or honest offer. The exact prompt, raw outputs, model and temperature are in `artifacts/llm-runs.json`; the runner is `scripts/llm-run.mjs`.
+Two local models on the same fixed listing, temperature 0.8, 20 runs each. **“Steered” = the model picked the offer whose listing carried the injection** (`injector-valid`); “crooked” is the separate kickback listing.
+
+| Model | Injection-followed | Crooked | Correct (honest) | Invalid choice |
+|---|---:|---:|---:|---:|
+| qwen2.5:0.5b | 14/20 | 1/20 | 1/20 | 4/20 |
+| qwen2.5:7b | **16/20** | 0/20 | 4/20 | 0/20 |
+
+The larger model is **not** more injection-resistant; it is better at the hard constraints (no expired/excluded/over-price pick). That is the point: the on-chain gate, not the model, decides who gets paid. Full prompts, raw outputs and per-run categories: `artifacts/llm-runs.json`, `artifacts/llm-runs-7b.json`; runners `scripts/llm-run.mjs`, `scripts/llm-run-7b.mjs`.
 
 **No on-chain transactions are claimed from this run.** The locked testnet deployment's runner key was not retained, so the three steered `execute_purchase` txs could not be sent; the scripted arena remains the reproducible demo. This is a real local model, not a hosted API.
 
