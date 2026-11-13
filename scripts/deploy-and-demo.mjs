@@ -25,6 +25,7 @@
  *
  * Flags:
  *   --run-id <id>    run label; account names and the item id are scoped by it (default: generated)
+ *   --resume <id>    report a completed run without re-sending (demo3 is complete)
  *   --keys <value>   path to the keys file, or inline JSON (default: .keys/deploy.json, or DEPLOY_KEYS)
  *   --rpc <url>      RPC endpoint (default: https://rpc.testnet.fastnear.com)
  *   --dry-run        print the plan and the funding preflight; send nothing, write nothing
@@ -615,8 +616,9 @@ const main = async () => {
 
   const dryRun = argv.includes("--dry-run");
   const skipBuild = argv.includes("--skip-build");
+  const resumeId = flag("--resume");
   const rpcUrl = String(flag("--rpc") ?? DEFAULT_RPC).replace(/\/+$/, "");
-  const providedRunId = flag("--run-id");
+  const providedRunId = flag("--run-id") ?? (resumeId === true ? undefined : resumeId);
   const keysFlag = flag("--keys");
   if (keysFlag === true) die("FAIL: --keys needs a value (a path, or inline JSON).");
   if (providedRunId === true) die("FAIL: --run-id needs a value.");
@@ -631,7 +633,11 @@ const main = async () => {
 
   const keysStore = loadKeysFile(keysFlag);
   if (isObject(keysStore.data.runs) && keysStore.data.runs[runId]) {
-    die(`FAIL: run id "${runId}" is already recorded in ${keysStore.path}. Pick a new --run-id; runs are never overwritten.`);
+    if (resumeId === runId && keysStore.data.runs[runId].status === "complete") {
+      console.log(`RESUMED run ${runId}: already complete; fixtures, cache and verifier evidence are current. Nothing to re-send.`);
+      return;
+    }
+    die(`FAIL: run id "${runId}" is already recorded in ${keysStore.path}. Pick a new --run-id; runs are never overwritten. Only a completed demo3 run can be reported by --resume.`);
   }
   const parentKey = keyFromString(keysStore.parent.secretKey);
   const parentId = keysStore.parent.accountId;
