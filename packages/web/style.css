@@ -83,7 +83,12 @@ h3 { font-weight: 700; font-size: 22px; line-height: 1.15; letter-spacing: -0.01
 .printer::after { content: ""; position: absolute; left: 30px; right: 30px; bottom: 9px; height: 4px; background: #0b0a09; border-radius: 4px; }
 .printer i { position: absolute; right: 18px; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: #6bd46b; box-shadow: 0 0 8px #6bd46b; }
 .printer.busy i { animation: blink 0.25s infinite; }
-.paper-wrap { position: relative; overflow: hidden; margin: -8px 34px 0; padding: 0 6px 40px; }
+.paper-wrap { position: relative; overflow: hidden; margin: -8px 8px 0; padding: 0 32px 50px; }
+.paper-wrap .receipt { transform: rotate(var(--tilt, 2deg)); transform-origin: 50% 0; }
+.hero-till { --tilt: 2.2deg; }
+.arena-till { --tilt: -1.6deg; }
+#txWin { transform: rotate(-1.8deg); }
+#txRefuse { transform: rotate(1.6deg); margin-top: 18px; }
 .receipt {
   position: relative; background: var(--paper); color: #262420;
   font-family: var(--print); font-size: 23px; line-height: 1.1;
@@ -322,7 +327,8 @@ textarea:focus { outline: 3px solid var(--red); outline-offset: 2px; }
   .pane { padding: 18px 16px; }
   .slider { grid-template-columns: 1fr auto; }
   .slider span { grid-column: 1 / -1; }
-  .paper-wrap { margin: -8px 14px 0; }
+  .paper-wrap { margin: -8px 0 0; padding: 0 18px 44px; }
+  .hero-till, .arena-till { --tilt: 1.4deg; }
   .receipt { font-size: 20px; padding: 24px 18px 40px; }
   .receipt .big { font-size: 32px; }
   .lines li .who { min-width: 0; }
