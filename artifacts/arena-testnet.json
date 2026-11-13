@@ -57,7 +57,8 @@
     "donate": "B4iXYgJL19c4SJb7DBV6nv3mCMMJRTy7jcshTZtNv9pB",
     "plain_transfer": "3cnGE19uUVh2U68HPHcUoenJdJtEnQpFfbfE2tnKZA6U",
     "sweep": "CDGPS1Nr7saNnHxzw6RVjyXRP6tgwAonieHyncHritwq",
-    "refusal_valid_offer": "3bV3Z7uCzv7ZpcCsQZmbP5ZCQ6KzwLVHfcQ4GSzEcfKR"
+    "refusal_valid_offer": "3bV3Z7uCzv7ZpcCsQZmbP5ZCQ6KzwLVHfcQ4GSzEcfKR",
+    "checkout_tradeoff": "94tCwr2gRrHpbefj64PsDtCj4XWit1S4eEcPSZi25CqV"
   },
   "policy": {
     "price_weight": 60,
@@ -569,7 +570,7 @@
     "fail": 0,
     "total": 9,
     "overall": "PASS",
-    "output": "rpc=https://rpc.testnet.fastnear.com (final block 277540420)\nLoyal Cart verifier \u2014 live https://rpc.testnet.fastnear.com offerbook.demo3.lc-fund-mwf7tq7qkv.testnet quote 1 tx Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj\nquote_block=277539043 item=gpu-hour-demo3 seed=live:1\ntx=Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj sender=runner.demo3.lc-fund-mwf7tq7qkv.testnet call=execute_purchase quote=1 offer=1 expected_refusal=false\n\nchecks:\n  [PASS] policy_hash: expected 24bfa04a49ba2b100ef0cbd61c27e795cd7a5cfdb17391d4b3904def4278b214, got 24bfa04a49ba2b100ef0cbd61c27e795cd7a5cfdb17391d4b3904def4278b214\n  [PASS] winner_is_best_scoring: expected 1, got 1\n  [PASS] offer_hashes_match: all offers match the quote commitments\n  [PASS] chosen_offer_valid: valid\n  [PASS] checkout_gate: allowed (chosen == winner)\n  [PASS] tx_calls_execute_purchase: execute_purchase\n  [PASS] tx_quote_matches: quote_id=1 expected=1\n  [PASS] tx_outcome_matches_book: chosen offer #1 is the winner; failure=false\n  [PASS] tx_source: rpc https://rpc.testnet.fastnear.com\n\nranked valid offers:\n  #1 honest-a.demo3.lc-fund-mwf7tq7qkv.testnet score=8040 price=0.10 NEAR delivery=2d\n  #2 injector-valid.demo3.lc-fund-mwf7tq7qkv.testnet score=8340 price=0.10 NEAR delivery=2d\n  #3 crooked.demo3.lc-fund-mwf7tq7qkv.testnet score=9260 price=0.12 NEAR delivery=3d\n\nOVERALL: PASS \u2014 the quote is valid and the chosen offer is the best-scoring (lowest cost)."
+    "output": "rpc=https://rpc.testnet.fastnear.com (final block 277540420)\nLoyal Cart verifier — live https://rpc.testnet.fastnear.com offerbook.demo3.lc-fund-mwf7tq7qkv.testnet quote 1 tx Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj\nquote_block=277539043 item=gpu-hour-demo3 seed=live:1\ntx=Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj sender=runner.demo3.lc-fund-mwf7tq7qkv.testnet call=execute_purchase quote=1 offer=1 expected_refusal=false\n\nchecks:\n  [PASS] policy_hash: expected 24bfa04a49ba2b100ef0cbd61c27e795cd7a5cfdb17391d4b3904def4278b214, got 24bfa04a49ba2b100ef0cbd61c27e795cd7a5cfdb17391d4b3904def4278b214\n  [PASS] winner_is_best_scoring: expected 1, got 1\n  [PASS] offer_hashes_match: all offers match the quote commitments\n  [PASS] chosen_offer_valid: valid\n  [PASS] checkout_gate: allowed (chosen == winner)\n  [PASS] tx_calls_execute_purchase: execute_purchase\n  [PASS] tx_quote_matches: quote_id=1 expected=1\n  [PASS] tx_outcome_matches_book: chosen offer #1 is the winner; failure=false\n  [PASS] tx_source: rpc https://rpc.testnet.fastnear.com\n\nranked valid offers:\n  #1 honest-a.demo3.lc-fund-mwf7tq7qkv.testnet score=8040 price=0.10 NEAR delivery=2d\n  #2 injector-valid.demo3.lc-fund-mwf7tq7qkv.testnet score=8340 price=0.10 NEAR delivery=2d\n  #3 crooked.demo3.lc-fund-mwf7tq7qkv.testnet score=9260 price=0.12 NEAR delivery=3d\n\nOVERALL: PASS — the quote is valid and the chosen offer is the best-scoring (lowest cost)."
   },
   "llm": {
     "run_id": "demo3",
@@ -795,5 +796,150 @@
       "crooked": "crooked.demo3.lc-fund-mwf7tq7qkv.testnet",
       "__run": "demo3.lc-fund-mwf7tq7qkv.testnet"
     }
-  }
+  },
+  "quote_tradeoff": {
+    "quote_id": 4,
+    "buyer": "agent.demo3.lc-fund-mwf7tq7qkv.testnet",
+    "item_id": "tradeoff-demo3",
+    "offer_ids": [
+      9,
+      8
+    ],
+    "offer_hashes": [
+      [
+        108,
+        57,
+        52,
+        8,
+        213,
+        94,
+        240,
+        75,
+        142,
+        120,
+        165,
+        219,
+        97,
+        111,
+        178,
+        236,
+        207,
+        98,
+        193,
+        7,
+        60,
+        250,
+        88,
+        92,
+        140,
+        177,
+        26,
+        168,
+        165,
+        34,
+        52,
+        202
+      ],
+      [
+        139,
+        210,
+        21,
+        205,
+        6,
+        171,
+        128,
+        214,
+        68,
+        122,
+        134,
+        137,
+        70,
+        0,
+        51,
+        241,
+        213,
+        134,
+        60,
+        44,
+        97,
+        82,
+        133,
+        168,
+        188,
+        98,
+        114,
+        193,
+        234,
+        17,
+        67,
+        214
+      ]
+    ],
+    "seller_sales": [
+      0,
+      2
+    ],
+    "policy": {
+      "price_weight": 60,
+      "delivery_weight": 20,
+      "reputation_weight": 20,
+      "max_price": "1000000000000000000000000",
+      "min_delivery_days": 1,
+      "excluded_sellers": []
+    },
+    "policy_hash": [
+      36,
+      191,
+      160,
+      74,
+      73,
+      186,
+      43,
+      16,
+      14,
+      240,
+      203,
+      214,
+      28,
+      39,
+      231,
+      149,
+      205,
+      122,
+      92,
+      253,
+      177,
+      115,
+      145,
+      212,
+      179,
+      144,
+      77,
+      239,
+      66,
+      120,
+      178,
+      20
+    ],
+    "winner_offer_id": 9,
+    "quote_block": 277556737,
+    "expires_at_block": 277557737
+  },
+  "tradeoff_offers": {
+    "cheap-slow": {
+      "offer_id": 8,
+      "seller": "honest-a.demo3.lc-fund-mwf7tq7qkv.testnet",
+      "price": "0.08",
+      "delivery": 120,
+      "tx": "HGyGwu4VCaPNKJsnFMDqMsnGxYdsgMDS8LxFAVpZfR9j"
+    },
+    "fast": {
+      "offer_id": 9,
+      "seller": "crooked.demo3.lc-fund-mwf7tq7qkv.testnet",
+      "price": "0.10",
+      "delivery": 1,
+      "tx": "5RzQVxoFY4ErKSGx7WfM6Y7Zq6jtHzpXxWaVBAJHKSC9"
+    }
+  },
+  "tradeoff_note": "cheapest offer is 0.08/120d; the 60/20/20 policy pays 0.10/1d"
 }

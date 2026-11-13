@@ -35,6 +35,11 @@ try {
   }
 } catch {}
 try {
+  const tradeoff = JSON.parse(readFileSync("artifacts/tradeoff.json", "utf8"));
+  for (const offer of Object.values(tradeoff.offers ?? {})) add(offer.tx, offer.seller);
+  add(tradeoff.checkout_tx, tradeoff.accounts?.runner ?? artifact.accounts?.runner);
+} catch {}
+try {
   const llm = JSON.parse(readFileSync("artifacts/llm-onchain.json", "utf8"));
   for (const offer of Object.values(llm.offers ?? {})) add(offer.tx, offer.seller);
   for (const pick of llm.picks ?? []) add(pick.tx, llm.accounts?.runner);
