@@ -34,6 +34,11 @@ try {
     add(row.tx, row.label.includes("existing") || row.label.includes("winner") ? artifact.accounts?.runner : artifact.accounts?.owner);
   }
 } catch {}
+try {
+  const llm = JSON.parse(readFileSync("artifacts/llm-onchain.json", "utf8"));
+  for (const offer of Object.values(llm.offers ?? {})) add(offer.tx, offer.seller);
+  for (const pick of llm.picks ?? []) add(pick.tx, llm.accounts?.runner);
+} catch {}
 
 const call = async (url, method, params) => {
   const response = await fetch(url, {

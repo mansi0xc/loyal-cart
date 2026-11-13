@@ -77,6 +77,53 @@ const rpc = async (method, params) => {
   }
   throw lastError ?? new Error("no rpc");
 };
+// Old transactions: the public node keeps tx status for only a few epochs (~2.5 days on testnet).
+// Fall back to archival nodes, then to the committed evidence cache, and always say which one answered.
+const ARCHIVAL = ["https://archival-rpc.testnet.near.org", "https://archival-rpc.testnet.fastnear.com"];
+const rpcAt = async (url, method, params) => {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: "lc", method, params }),
+      signal: ctrl.signal,
+    });
+    const body = await res.json();
+    if (body.error) throw new Error(body.error.cause?.name ?? body.error.message ?? "rpc error");
+    return body.result;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+let txCache = null;
+const loadTxCache = () =>
+  (txCache ??= fetch("../../evidence/tx-cache.json")
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null));
+const txStatus = async (hash, sender) => {
+  const params = { tx_hash: hash, sender_account_id: sender, wait_until: "NONE" };
+  try {
+    const res = await rpc("EXPERIMENTAL_tx_status", params);
+    return { res, kind: "live", src: `live · read now from ${new URL(rpcUsed).host}` };
+  } catch {
+    /* pruned or offline: try archival */
+  }
+  for (const url of ARCHIVAL) {
+    try {
+      const res = await rpcAt(url, "EXPERIMENTAL_tx_status", params);
+      return { res, kind: "archival", src: `live · archival node ${new URL(url).host}` };
+    } catch {
+      /* next */
+    }
+  }
+  const cache = await loadTxCache();
+  const hit = cache?.txs?.[hash];
+  if (hit?.tx) return { res: hit.tx, kind: "cached", src: `CACHED, fetched ${String(cache.fetched_at).slice(0, 10)}` };
+  throw new Error("transaction not available");
+};
+
 const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const b58hex = (s) => {
   let n = 0n;
@@ -153,15 +200,18 @@ const heroReceipt = ({ art, quote, quoteBlock, base }) => {
 
 // ---------------------------------------------------------------- arena
 const setupArena = ({ art, quote, quoteBlock, base }) => {
-  const policy = art.policy;
+  const committed = art.policy;
+  let policy = committed;
   const original = base.find((o) => o.role === "injector_valid").listing_text;
 
   $("#itemId").textContent = art.item_id;
-  $("#policyShort").textContent = `${art.committed_policy_hash.slice(0, 6)}..`;
+  if ($("#policyShort")) $("#policyShort").textContent = `${art.committed_policy_hash.slice(0, 6)}..`;
   $("#cmdTx").textContent = `node packages/verifier/verify.mjs --offer-book ${art.accounts.offerbook} --quote 3 --tx ${art.tx.refusal} --sender ${art.accounts.runner}`;
   $("#copyTx").dataset.copy = $("#cmdTx").textContent;
 
-  const state = { bribe: 0, text: original, crookedPrice: 120 };
+  const state = { bribe: 0, text: original, crookedPrice: 120, whatif: false };
+  const weights = { price_weight: committed.price_weight, delivery_weight: committed.delivery_weight, reputation_weight: committed.reputation_weight };
+  const formula = (p) => `score = ${p.price_weight}·price + ${p.delivery_weight}·days + ${p.reputation_weight}·(100−sales)`;
   const tallies = { bribe: 0, inject: 0, compete: 0 };
   let reprints = 0;
   let lastAnim = 0;
@@ -234,6 +284,10 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
     $("#arPaid").textContent = `PAY #${top.offer_id}`;
     $("#arAmt").textContent = `${near3(top.price)} N`;
     $("#arHead").textContent = `QUOTE #${quote.quote_id} · ${reprints === 1 ? "PRINT" : `REPRINT ${reprints - 1}`}`;
+    $("#arPolicy").innerHTML = state.whatif
+      ? `policy <b>WHAT-IF</b> · not committed`
+      : `policy <span id="policyShort">${art.committed_policy_hash.slice(0, 6)}..</span> · committed`;
+    $("#arFormula").textContent = formula(policy);
     $("#lcPick").textContent = `pays #${top.offer_id}`;
     $("#naivePick").textContent = `picks #${art.offers.injector_valid.offer_id}`;
     const now = performance.now();
@@ -307,13 +361,62 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
         p.classList.toggle("on", on);
       });
       $("#arenaReceipt").classList.toggle("hide-tip", tab.dataset.tab !== "bribe");
+      setWhatif(tab.dataset.tab === "whatif");
     }),
   );
+
+  // 04 · your policy (local what-if; the committed policy never changes)
+  const setWhatif = (on) => {
+    if (state.whatif === on) return;
+    state.whatif = on;
+    policy = on ? { ...committed, ...weights } : committed;
+    $$(".lines .stamp").forEach((s) => s.remove());
+    render();
+  };
+  const wInputs = [
+    ["#wPrice", "price_weight"],
+    ["#wDelivery", "delivery_weight"],
+    ["#wRep", "reputation_weight"],
+  ];
+  const committedWinner = rankOffers(base, committed, quoteBlock)[0]?.offer_id;
+  const explainWhatif = () => {
+    const w = winnerId();
+    $("#whatifExplain").innerHTML =
+      w === committedWinner
+        ? `Winner under your weights: <b>#${w}</b>, the same as the committed policy. A local what-if; on chain the quote is ranked only by the policy the buyer committed before any offer was read.`
+        : `Winner under your weights: <b>#${w}</b>. Different buyers, different "best". On chain this needs a new commitment and a new quote; nobody can swap the policy under an existing quote.`;
+  };
+  wInputs.forEach(([sel, key]) => {
+    const input = $(sel);
+    input.value = String(committed[key]);
+    fill(input);
+    input.addEventListener("input", () => {
+      weights[key] = Number(input.value);
+      $(`${sel}Out`).textContent = input.value;
+      fill(input);
+      policy = { ...committed, ...weights };
+      $$(".lines .stamp").forEach((s) => s.remove());
+      render();
+      explainWhatif();
+    });
+  });
+  $("#wReset").addEventListener("click", () => {
+    wInputs.forEach(([sel, key]) => {
+      weights[key] = committed[key];
+      $(sel).value = String(committed[key]);
+      $(`${sel}Out`).textContent = String(committed[key]);
+      fill($(sel));
+    });
+    policy = { ...committed, ...weights };
+    render();
+    explainWhatif();
+  });
 
   const pay = (id) => {
     $$(".lines .stamp").forEach((s) => s.remove());
     const li = rows.get(id);
-    const w = winnerId();
+    // the gate only knows the committed policy, even while the what-if tab is open
+    const w = rankOffers(offersNow(), committed, quoteBlock)[0]?.offer_id;
     const o = base.find((x) => Number(x.offer_id) === id);
     if (id === w) {
       li.append(el("span", "stamp ink", "PAID"));
@@ -367,7 +470,7 @@ const proof = ({ art }) => {
     state.textContent = "reading testnet...";
     let lines;
     try {
-      const res = await rpc("EXPERIMENTAL_tx_status", { tx_hash: hash, sender_account_id: sender, wait_until: "NONE" });
+      const { res, kind: srcKind, src } = await txStatus(hash, sender);
       const p = parse(res);
       lines = [
         ["d", `tx ${short(hash, 8, 6)}`],
@@ -395,8 +498,8 @@ const proof = ({ art }) => {
         if (back > 0n) lines.push(["y", `↩ ${nearStr(back.toString())} N back to ${art.accounts.agent.split(".")[0]}`]);
         $("[data-amount]", card).textContent = paidSeller ? "?" : "0";
       }
-      state.textContent = `live · read now from ${new URL(rpcUsed).host}`;
-      state.classList.add("ok");
+      state.textContent = src;
+      state.classList.add(srcKind === "cached" ? "cached" : "ok");
     } catch {
       state.textContent = "recorded (testnet unreachable)";
       lines =
@@ -416,6 +519,155 @@ const proof = ({ art }) => {
     run($("#txWin"), art.tx.checkout_winner, "win");
     setTimeout(() => run($("#txRefuse"), art.tx.refusal, "refuse"), reduced ? 0 : 600);
   }, { threshold: 0.2 }).observe($("#proofGrid"));
+};
+
+// ---------------------------------------------------------------- refusal catalogue (voided receipts)
+const voids = async ({ art }) => {
+  let data;
+  try {
+    data = await fetch("../../artifacts/refusals.json").then((r) => r.json());
+  } catch {
+    $("#refusals").hidden = true;
+    return;
+  }
+  const rowsAll = data.rows ?? [];
+  const n = rowsAll.length;
+  const words = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"];
+  const refused = rowsAll.filter((r) => r.expected !== "success").length;
+  $("#refusals h2").innerHTML = `${words[n] ?? n} attempts. <i>${words[refused] ?? refused} voided receipts.</i>`;
+  const cache = await loadTxCache();
+  const grid = $("#voidGrid");
+  grid.innerHTML = "";
+  const cards = rowsAll.map((r, i) => {
+    const ok = r.expected === "success";
+    const card = el("article", `void${ok ? " ok" : ""}`);
+    card.style.setProperty("--r", `${((i * 37) % 7) - 3}deg`);
+    card.innerHTML = `
+      <div class="c dim small">ATTEMPT ${String(i + 1).padStart(2, "0")}</div>
+      <div class="vlabel">${esc(r.label)}</div>
+      <hr />
+      <div class="row"><span>expected</span><span>${esc(ok ? "success (control)" : r.expected)}</span></div>
+      <div class="vstate dim" data-v>recorded</div>
+      <a class="tx-link" href="${explorer(r.tx)}" target="_blank" rel="noreferrer">${short(r.tx, 8, 6)} ↗</a>
+      <span class="stamp ${ok ? "ink" : "red"}">${ok ? "PAID" : "VOID"}</span>`;
+    grid.append(card);
+    return [card, r];
+  });
+  const check = async ([card, r]) => {
+    const state = $("[data-v]", card);
+    const sender = cache?.txs?.[r.tx]?.sender ?? art.accounts.owner;
+    try {
+      const { res, kind, src } = await txStatus(r.tx, sender);
+      const blob = JSON.stringify(res.receipts_outcome ?? []);
+      const failed = (res.receipts_outcome ?? []).some((o) => o.outcome.status.Failure);
+      const match = r.expected === "success" ? !failed : failed && blob.includes(r.expected);
+      state.textContent = `${match ? "✓" : "✗"} ${r.expected === "success" ? "succeeded" : r.expected} · ${kind === "cached" ? src : kind}`;
+      state.className = `vstate ${match ? "good" : "bad"}`;
+    } catch {
+      state.textContent = "recorded (not re-read)";
+    }
+  };
+  let started = false;
+  new IntersectionObserver((entries, obs) => {
+    if (started || !entries.some((e) => e.isIntersecting)) return;
+    started = true;
+    obs.disconnect();
+    (async () => {
+      for (let i = 0; i < cards.length; i += 3) await Promise.all(cards.slice(i, i + 3).map(check));
+    })();
+  }, { threshold: 0.05 }).observe(grid);
+};
+
+// ---------------------------------------------------------------- verify in the browser (state first, no wallet)
+const enc = new TextEncoder();
+const cat = (...parts) => {
+  const out = new Uint8Array(parts.reduce((a, p) => a + p.length, 0));
+  let o = 0;
+  for (const p of parts) {
+    out.set(p, o);
+    o += p.length;
+  }
+  return out;
+};
+const le = (bytes, v) => {
+  let x = BigInt(v);
+  const out = new Uint8Array(bytes);
+  for (let i = 0; i < bytes; i += 1) {
+    out[i] = Number(x & 0xffn);
+    x >>= 8n;
+  }
+  return out;
+};
+const bstr = (s) => {
+  const b = enc.encode(s);
+  return cat(le(4, b.length), b);
+};
+const hexOf = (v) => (Array.isArray(v) ? v.map((x) => x.toString(16).padStart(2, "0")).join("") : String(v).replace(/^0x/i, "").toLowerCase());
+const bytesOf = (v) => (Array.isArray(v) ? Uint8Array.from(v) : Uint8Array.from(String(v).match(/../g).map((x) => parseInt(x, 16))));
+const sha256 = async (bytes) => hexOf([...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]);
+const borshPolicy = (p) =>
+  cat(le(4, p.price_weight), le(4, p.delivery_weight), le(4, p.reputation_weight), le(16, p.max_price), le(2, p.min_delivery_days), le(4, p.excluded_sellers.length), ...p.excluded_sellers.map(bstr));
+const borshOffer = (o) =>
+  cat(le(8, o.offer_id), bstr(o.item_id), bstr(o.seller), le(16, o.price), le(2, o.delivery_days), le(8, o.expires_at_block), bytesOf(o.metadata_hash));
+
+const verifyPanel = ({ art, quote }) => {
+  const out = $("#verifyOut");
+  const btn = $("#verifyBtn");
+  const view = async (account_id, method_name, args) => {
+    const r = await rpc("query", { request_type: "call_function", finality: "final", account_id, method_name, args_base64: btoa(JSON.stringify(args)) });
+    return JSON.parse(new TextDecoder().decode(new Uint8Array(r.result)));
+  };
+  const line = (ok, name, detail) => `<div class="vrow ${ok ? "pass" : "fail"}"><span>${ok ? "PASS" : "FAIL"}</span><b>${esc(name)}</b><small>${esc(detail)}</small></div>`;
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Reading testnet…";
+    out.hidden = false;
+    out.innerHTML = `<div class="c big">VERIFY</div><div class="c dim">reading NEAR testnet…</div>`;
+    const checks = [];
+    const add = (ok, name, detail) => checks.push([ok, name, detail]);
+    try {
+      const [obKeys, cgKeys, obAcc, cgAcc] = await Promise.all([
+        rpc("query", { request_type: "view_access_key_list", finality: "final", account_id: art.accounts.offerbook }),
+        rpc("query", { request_type: "view_access_key_list", finality: "final", account_id: art.accounts.checkout }),
+        rpc("query", { request_type: "view_account", finality: "final", account_id: art.accounts.offerbook }),
+        rpc("query", { request_type: "view_account", finality: "final", account_id: art.accounts.checkout }),
+      ]);
+      add(obKeys.keys.length === 0, "OfferBook has no keys", `${obKeys.keys.length} access keys`);
+      add(cgKeys.keys.length === 0, "CheckoutGate has no keys", `${cgKeys.keys.length} access keys`);
+      add(b58hex(obAcc.code_hash) === art.wasm_sha256.offer_book, "OfferBook code is the published build", `${b58hex(obAcc.code_hash).slice(0, 16)}…`);
+      add(b58hex(cgAcc.code_hash) === art.wasm_sha256.checkout_gate, "CheckoutGate code is the published build", `${b58hex(cgAcc.code_hash).slice(0, 16)}…`);
+      const q = await view(art.accounts.offerbook, "get_quote", { quote_id: Number(quote.quote_id) });
+      const ph = await sha256(borshPolicy(q.policy));
+      add(ph === hexOf(q.policy_hash), "Policy matches its commitment", `sha256(policy) = ${ph.slice(0, 16)}…`);
+      const offers = [];
+      for (let i = 0; i < q.offer_ids.length; i += 1) {
+        const o = await view(art.accounts.offerbook, "get_offer", { offer_id: q.offer_ids[i] });
+        offers.push({ ...o, sales: q.seller_sales[i] });
+      }
+      let hashesOk = offers.length === q.offer_hashes.length;
+      for (let i = 0; i < offers.length && hashesOk; i += 1) hashesOk = (await sha256(borshOffer(offers[i]))) === hexOf(q.offer_hashes[i]);
+      add(hashesOk, "Offers unchanged since the quote", `${offers.length} offers re-hashed`);
+      const ranked = rankOffers(offers, q.policy, q.quote_block);
+      add(ranked[0]?.offer_id === q.winner_offer_id, "Recomputed winner = quote winner", `#${ranked[0]?.offer_id} vs #${q.winner_offer_id}`);
+      add(Number(q.winner_offer_id) === Number(art.purchase_winner.offer_id), "The paid offer is that winner", `paid #${art.purchase_winner.offer_id}`);
+      const win = await txStatus(art.tx.checkout_winner, art.accounts.runner);
+      const winOk = !(win.res.receipts_outcome ?? []).some((o) => o.outcome.status.Failure);
+      add(winOk, "Winner checkout succeeded", win.kind === "cached" ? win.src : win.kind);
+      const ref = await txStatus(art.tx.refusal, art.accounts.runner);
+      const refOk = JSON.stringify(ref.res.receipts_outcome ?? []).includes("NotWinner");
+      add(refOk, "Non-winner checkout refused: NotWinner", ref.kind === "cached" ? ref.src : ref.kind);
+    } catch (error) {
+      add(false, "Could not finish reading testnet", String(error.message ?? error));
+    }
+    const pass = checks.filter((c) => c[0]).length;
+    out.innerHTML =
+      `<div class="c big">VERIFY</div><div class="c dim">NEAR testnet · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</div><hr />` +
+      checks.map((c) => line(...c)).join("") +
+      `<hr /><div class="row big"><span>RESULT</span><span>${pass}/${checks.length} ${pass === checks.length ? "PASS" : "CHECK"}</span></div>`;
+    restart(out, "reprint");
+    btn.disabled = false;
+    btn.textContent = "Verify again";
+  });
 };
 
 // ---------------------------------------------------------------- static sections
@@ -511,6 +763,8 @@ load()
     heroReceipt(data);
     setupArena(data);
     proof(data);
+    voids(data);
+    verifyPanel(data);
     fillStatic(data);
     liveFacts(data);
   })
