@@ -1,4 +1,4 @@
-.PHONY: test verify arena fmt lint build-wasm test-integration
+.PHONY: evidence-cache test verify arena fmt lint build-wasm test-integration
 
 test:
 	cargo test --workspace
@@ -21,3 +21,6 @@ build-wasm:
 
 test-integration: build-wasm
 	cargo test -p loyal-cart-integration-tests --test flow -- --ignored --nocapture
+
+evidence-cache:
+	node scripts/evidence-cache.mjs --artifact artifacts/arena-testnet.json

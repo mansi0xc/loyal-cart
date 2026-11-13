@@ -1,0 +1,113 @@
+{
+  "generated_at": "2026-11-13T06:51:06.113Z",
+  "item": "cp6-refusals",
+  "quote_id": 2,
+  "offer_id": 26,
+  "rows": [
+    {
+      "label": "invalid item id",
+      "expected": "InvalidItemId",
+      "tx": "G2A5itEdJzQoySoQdEorY9pdu9FEe8133ok8LomofUyM",
+      "error": "Smart contract panicked: InvalidItemId",
+      "matched": true
+    },
+    {
+      "label": "invalid price",
+      "expected": "InvalidPrice",
+      "tx": "CTVMjo4XCbknCPMsAJoBZLCvYSSRt13VhhE62ugVuAgh",
+      "error": "Smart contract panicked: InvalidPrice",
+      "matched": true
+    },
+    {
+      "label": "invalid delivery",
+      "expected": "InvalidDelivery",
+      "tx": "ANLionJuL1Z5dQsjV5fhWqVRm7aJgg687k6kDAgDx2h2",
+      "error": "Smart contract panicked: InvalidDelivery",
+      "matched": true
+    },
+    {
+      "label": "expiry too soon",
+      "expected": "ExpiryTooSoon",
+      "tx": "9c5f5nGur6eccraRZWKYVnb2m2KmFbZZHmDZpbumo219",
+      "error": "Smart contract panicked: ExpiryTooSoon",
+      "matched": true
+    },
+    {
+      "label": "offer already live",
+      "expected": "OfferAlreadyLive",
+      "tx": "3gtKy9gz1imQAcFS7pKA83i6aXRTvN1hZe6oY1hc9LoJ",
+      "error": "Smart contract panicked: OfferAlreadyLive",
+      "matched": true
+    },
+    {
+      "label": "policy hash mismatch",
+      "expected": "PolicyHashMismatch",
+      "tx": "Cy927z3o8YQp8ZqtBTuUr3DMTEMXQhfbb1WwWKPHbaWF",
+      "error": "Smart contract panicked: PolicyHashMismatch",
+      "matched": true
+    },
+    {
+      "label": "invalid policy",
+      "expected": "InvalidPolicy",
+      "tx": "4ZG6qT7JnbmxudWa5H28yfwjzUaevJgZ16ygFSvwPSYv",
+      "error": "Smart contract panicked: InvalidPolicy",
+      "matched": true
+    },
+    {
+      "label": "invalid ttl",
+      "expected": "InvalidTtl",
+      "tx": "FmU8bWMmLGmnJPMRsJYdhace2edJh5BLBLfpho8MXG6N",
+      "error": "Smart contract panicked: InvalidTtl",
+      "matched": true
+    },
+    {
+      "label": "no valid offers",
+      "expected": "NoValidOffers",
+      "tx": "FRn5byVZbsiqDzyxrzDgBuvpVYeUuuUxxVmC8kGU5BtB",
+      "error": "Smart contract panicked: NoValidOffers",
+      "matched": true
+    },
+    {
+      "label": "existing quote 2",
+      "expected": "success",
+      "tx": "CoGrpjhAgQSQc9KtLuDX7SKJ61XPsQQUrQisLMhZB81C",
+      "error": "success",
+      "matched": true
+    },
+    {
+      "label": "not buyer",
+      "expected": "NotBuyer",
+      "tx": "7i29gVYTePbsDZb5gSp5bzVGvydhR9UBNToGkmUkj5wQ",
+      "error": "Smart contract panicked: NotBuyer",
+      "matched": true
+    },
+    {
+      "label": "quote not found",
+      "expected": "QuoteNotFound",
+      "tx": "6Ab7B9zzKWKC9Qyc5DRFm4TwQbmi6KQfSjbGxErqWmQA",
+      "error": "Smart contract panicked: QuoteNotFound",
+      "matched": true
+    },
+    {
+      "label": "only agent",
+      "expected": "OnlyAgent",
+      "tx": "Dw1Zu9Ah3wJXNavyt9afrsSabeu9Soh1K8vGwWTKSdUv",
+      "error": "Smart contract panicked: OnlyAgent",
+      "matched": true
+    },
+    {
+      "label": "not winner (existing)",
+      "expected": "NotWinner",
+      "tx": "4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX",
+      "error": "NotWinner",
+      "matched": true
+    },
+    {
+      "label": "winner checkout (control)",
+      "expected": "success",
+      "tx": "Fj64Shdpa4GFkMpVTKQHvFk3hD1Smo2DoT2Hd5gphbKa",
+      "error": "success",
+      "matched": true
+    }
+  ]
+}

@@ -17,6 +17,8 @@ const offerBook = argValue("--offer-book", "");
 const quoteArg = argValue("--quote", "");
 const txHash = argValue("--tx", "");
 const txSender = argValue("--sender", "");
+const noTxRpc = args.includes("--no-tx-rpc");
+const cachePath = resolve(argValue("--cache", "evidence/tx-cache.json"));
 
 const callRpc = async (url, method, params) => {
   const response = await fetch(url, {
@@ -49,6 +51,36 @@ const rpcCall = (method, params) => {
   return callRpc(rpc, method, params);
 };
 
+let txCache = null;
+const loadTxCache = () => {
+  if (txCache !== null) return txCache;
+  try {
+    txCache = JSON.parse(readFileSync(cachePath, "utf8"));
+  } catch {
+    txCache = { txs: {} };
+  }
+  return txCache;
+};
+const getTx = async (hash, sender) => {
+  let rpcError = null;
+  if (!noTxRpc) {
+    const txRpcCandidates = [...new Set([rpc, "https://archival-rpc.testnet.near.org", "https://rpc.testnet.fastnear.com", "https://rpc.testnet.near.org"].filter(Boolean))];
+    for (const candidate of txRpcCandidates) {
+      try {
+        const tx = await callRpc(candidate, "tx", { tx_hash: hash, sender_account_id: sender, wait_until: "FINAL" });
+        return { tx, source: `rpc ${candidate}` };
+      } catch (error) {
+        rpcError = error;
+      }
+    }
+  }
+  const cached = loadTxCache().txs?.[hash];
+  if (cached?.tx) return { tx: cached.tx, source: "cache" };
+  throw new Error(
+    `${noTxRpc ? "--no-tx-rpc" : `tx RPC failed (${rpcError?.message ?? "unknown"})`}; no cached tx for ${hash} in ${cachePath}`,
+  );
+};
+
 const query = async (methodName, args) => {
   const result = await rpcCall("query", {
     request_type: "call_function",
@@ -70,11 +102,7 @@ if (offerBook && quoteArg) {
     let chosenOfferId = quote.winner_offer_id;
     if (txHash) {
       if (!txSender) throw new Error("--tx requires --sender");
-      const tx = await rpcCall("tx", {
-        tx_hash: txHash,
-        sender_account_id: txSender,
-        wait_until: "FINAL",
-      });
+      const { tx, source: txSource } = await getTx(txHash, txSender);
       const call = tx.transaction.actions.find((action) => action.FunctionCall);
       if (!call) throw new Error("transaction has no FunctionCall action");
       const callArgs = JSON.parse(Buffer.from(call.FunctionCall.args, "base64").toString());
@@ -90,6 +118,7 @@ if (offerBook && quoteArg) {
         expectedRefusal,
         sawFailure,
         namedRefusal,
+        source: txSource,
         checks: [
           {
             ok: call.FunctionCall.method_name === "execute_purchase",
@@ -107,6 +136,11 @@ if (offerBook && quoteArg) {
             detail: expectedRefusal
               ? `chosen offer #${chosenOfferId} is not the winner; failure=${sawFailure}; NotWinner=${namedRefusal}`
               : `chosen offer #${chosenOfferId} is the winner; failure=${sawFailure}`,
+          },
+          {
+            ok: true,
+            name: "tx_source",
+            detail: txSource === "cache" ? "SKIPPED-AGED (cached)" : txSource,
           },
         ],
       };
