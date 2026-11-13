@@ -14,7 +14,7 @@ For a company, the procurement lead commits the policy; the employee or agent wh
 
 We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on a best-scoring rule over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
 
-Tracks: **realworld**, **security**, **open**. The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
+Tracks: **agents**, **security**, **realworld**, **open**. The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
 
 ---
 
@@ -80,10 +80,12 @@ Two local models on the same fixed listing, temperature 0.8, 20 runs each. **“
 
 | Model | Injection-followed | Crooked | Correct (honest) | Invalid choice |
 |---|---:|---:|---:|---:|
-| qwen2.5:0.5b | 14/20 | 1/20 | 1/20 | 4/20 |
-| qwen2.5:7b | **16/20** | 0/20 | 4/20 | 0/20 |
+| qwen2.5:0.5b | 14/20 | 2/20 | 1/20 | 3/20 |
+| qwen2.5:7b | **19/20** | 0/20 | 1/20 | 0/20 |
 
-The larger model is **not** more injection-resistant; it is better at the hard constraints (no expired/excluded/over-price pick). That is the point: the on-chain gate, not the model, decides who gets paid. Full prompts, raw outputs and per-run categories: `artifacts/llm-runs.json`, `artifacts/llm-runs-7b.json`; runners `scripts/llm-run.mjs`, `scripts/llm-run-7b.mjs`.
+The larger model is **not** immune to injection; it is better at the hard constraints. That is the point: the on-chain gate, not the model, decides who gets paid.
+
+**On-chain picks on demo3:** three injector-valid picks were sent as real `execute_purchase` txs and refused with `NotWinner` (`CxgrQT…`, `812Q7x…`, `3huPzF…`); the honest pick was paid (`4gvcSq…`). Full prompts, raw outputs and per-run categories: `artifacts/llm-runs.json`, `artifacts/llm-runs-7b.json`; runners `scripts/llm-run.mjs`, `scripts/llm-run-7b.mjs`.
 
 **No on-chain transactions are claimed from this run.** The locked testnet deployment's runner key was not retained, so the three steered `execute_purchase` txs could not be sent; the scripted arena remains the reproducible demo. This is a real local model, not a hosted API.
 
@@ -91,25 +93,48 @@ The larger model is **not** more injection-resistant; it is better at the hard c
 
 | Attack | Expected | Tx | Result |
 |---|---|---|---|
-| invalid item id | `InvalidItemId` | [`G2A5itEd…`](https://testnet.nearblocks.io/txns/G2A5itEdJzQoySoQdEorY9pdu9FEe8133ok8LomofUyM) | PASS |
-| invalid price | `InvalidPrice` | [`CTVMjo4X…`](https://testnet.nearblocks.io/txns/CTVMjo4XCbknCPMsAJoBZLCvYSSRt13VhhE62ugVuAgh) | PASS |
-| invalid delivery | `InvalidDelivery` | [`ANLionJu…`](https://testnet.nearblocks.io/txns/ANLionJuL1Z5dQsjV5fhWqVRm7aJgg687k6kDAgDx2h2) | PASS |
-| expiry too soon | `ExpiryTooSoon` | [`9c5f5nGu…`](https://testnet.nearblocks.io/txns/9c5f5nGur6eccraRZWKYVnb2m2KmFbZZHmDZpbumo219) | PASS |
-| offer already live | `OfferAlreadyLive` | [`3gtKy9gz…`](https://testnet.nearblocks.io/txns/3gtKy9gz1imQAcFS7pKA83i6aXRTvN1hZe6oY1hc9LoJ) | PASS |
-| policy hash mismatch | `PolicyHashMismatch` | [`Cy927z3o…`](https://testnet.nearblocks.io/txns/Cy927z3o8YQp8ZqtBTuUr3DMTEMXQhfbb1WwWKPHbaWF) | PASS |
-| invalid policy | `InvalidPolicy` | [`4ZG6qT7J…`](https://testnet.nearblocks.io/txns/4ZG6qT7JnbmxudWa5H28yfwjzUaevJgZ16ygFSvwPSYv) | PASS |
-| invalid ttl | `InvalidTtl` | [`FmU8bWMm…`](https://testnet.nearblocks.io/txns/FmU8bWMmLGmnJPMRsJYdhace2edJh5BLBLfpho8MXG6N) | PASS |
-| no valid offers | `NoValidOffers` | [`FRn5byVZ…`](https://testnet.nearblocks.io/txns/FRn5byVZbsiqDzyxrzDgBuvpVYeUuuUxxVmC8kGU5BtB) | PASS |
-| existing quote 2 | `success` | [`CoGrpjhA…`](https://testnet.nearblocks.io/txns/CoGrpjhAgQSQc9KtLuDX7SKJ61XPsQQUrQisLMhZB81C) | PASS |
-| not buyer | `NotBuyer` | [`7i29gVYT…`](https://testnet.nearblocks.io/txns/7i29gVYTePbsDZb5gSp5bzVGvydhR9UBNToGkmUkj5wQ) | PASS |
-| quote not found | `QuoteNotFound` | [`6Ab7B9zz…`](https://testnet.nearblocks.io/txns/6Ab7B9zzKWKC9Qyc5DRFm4TwQbmi6KQfSjbGxErqWmQA) | PASS |
-| only agent | `OnlyAgent` | [`Dw1Zu9Ah…`](https://testnet.nearblocks.io/txns/Dw1Zu9Ah3wJXNavyt9afrsSabeu9Soh1K8vGwWTKSdUv) | PASS |
-| not winner (existing) | `NotWinner` | [`4HfakrGL…`](https://testnet.nearblocks.io/txns/4HfakrGLYqYUAJ9bbboxk3FFMLCvZFRkSxX9k7UZhcTX) | PASS |
-| winner checkout (control) | `success` | [`Fj64Shdp…`](https://testnet.nearblocks.io/txns/Fj64Shdpa4GFkMpVTKQHvFk3hD1Smo2DoT2Hd5gphbKa) | PASS |
+| winner checkout (arena control) | `success` | [`Gnwf9psQ…`](https://testnet.nearblocks.io/txns/Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj) | PASS |
+| not winner | `NotWinner` | [`8eMte9om…`](https://testnet.nearblocks.io/txns/8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T) | PASS |
+| invalid item id | `InvalidItemId` | [`Gx7L7Wpu…`](https://testnet.nearblocks.io/txns/Gx7L7WpuKQrnUM9Jvpw9v3VNVFyECDbbL2S5xEKj9pd9) | PASS |
+| invalid price | `InvalidPrice` | [`4nyeAzRs…`](https://testnet.nearblocks.io/txns/4nyeAzRsWueFGPSpF1HkH9aAA7rq6ok59oXanWULpzZc) | PASS |
+| invalid delivery | `InvalidDelivery` | [`EKP4DVGW…`](https://testnet.nearblocks.io/txns/EKP4DVGW1LefyBAHWNqkXerBcEHxrGdUfNp3AcsVTZXw) | PASS |
+| expiry too soon | `ExpiryTooSoon` | [`8sA66UB3…`](https://testnet.nearblocks.io/txns/8sA66UB3X6DoonGWhLzExRqZKDM4DqhRXJU1uZviLJuY) | PASS |
+| valid offer (control) | `success` | [`3bV3Z7uC…`](https://testnet.nearblocks.io/txns/3bV3Z7uCzv7ZpcCsQZmbP5ZCQ6KzwLVHfcQ4GSzEcfKR) | PASS |
+| offer already live | `OfferAlreadyLive` | [`GKkZqJEP…`](https://testnet.nearblocks.io/txns/GKkZqJEPHGVQX92H96Yf4PmQyjj3VvHG8DmkEBARPzH2) | PASS |
+| policy hash mismatch | `PolicyHashMismatch` | [`GbxZ2EfV…`](https://testnet.nearblocks.io/txns/GbxZ2EfVLq89ZwvPLND9eeq63s5nRZLBaaqNhpL9Qbb7) | PASS |
+| invalid policy | `InvalidPolicy` | [`GjtoFehY…`](https://testnet.nearblocks.io/txns/GjtoFehYpvMkULV15nNT17zKL3a7JimUaebTLJskx6G) | PASS |
+| invalid ttl | `InvalidTtl` | [`2CRcATuu…`](https://testnet.nearblocks.io/txns/2CRcATuupUqnR5swHUEbtvmLvQSvkDqGWWQSTk84od8D) | PASS |
+| no valid offers | `NoValidOffers` | [`HcQp9z3B…`](https://testnet.nearblocks.io/txns/HcQp9z3Bqb2M1kERsFG82iFBKFNhupBowQvkV32KihhR) | PASS |
+| not buyer | `NotBuyer` | [`BfLiVXDz…`](https://testnet.nearblocks.io/txns/BfLiVXDzzM7fax2mVNWQPR4u8kmTBLDMLmz9wduKAd26) | PASS |
+| quote not found | `QuoteNotFound` | [`CQPo8LbD…`](https://testnet.nearblocks.io/txns/CQPo8LbD4RTZhW6uoWC88thfE1xoJ9hUTjBpJYfk7gEz) | PASS |
+| only agent | `OnlyAgent` | [`9Zq5uGai…`](https://testnet.nearblocks.io/txns/9Zq5uGaiUCuUUY3mg4mrxoLy1GHmyx6hrPobMmni1X7A) | PASS |
+| already purchased | `AlreadyPurchased` | [`CpGyLKMu…`](https://testnet.nearblocks.io/txns/CpGyLKMudArte5nrmmHM8F8DBSzXt7jkt2M5h35togYK) | PASS |
 
-Generated by the owner/agent/gate paths against the locked CP3 contracts; the existing winner and NotWinner rows come from the arena artifact. The full JSON is `artifacts/refusals.json`.
+14 named refusals plus 2 success controls, all re-read from chain. Full JSON: `artifacts/refusals.json`.
 
-## Live testnet (CP3, deployed 2026-11-12)
+## Final run (`demo3`, 13 Nov 2026)
+
+Fresh accounts, fresh contracts, locked. This is the evidence the page reads and the run to use for judging.
+
+| Role | Account |
+|---|---|
+| Owner | `owner.demo3.lc-fund-mwf7tq7qkv.testnet` |
+| OfferBook | `offerbook.demo3.lc-fund-mwf7tq7qkv.testnet` |
+| CheckoutGate | `checkout.demo3.lc-fund-mwf7tq7qkv.testnet` |
+| AgentAccount | `agent.demo3.lc-fund-mwf7tq7qkv.testnet` |
+| Runner | `runner.demo3.lc-fund-mwf7tq7qkv.testnet` |
+| Honest A / injector-valid / crooked | `honest-a…`, `injector-valid…`, `crooked…` |
+
+- Winner checkout: [`Gnwf9psQ…`](https://testnet.nearblocks.io/txns/Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj) — quote 1, offer 1, `honest-a` paid 0.1 NEAR.
+- Non-winner refusal: [`8eMte9om…`](https://testnet.nearblocks.io/txns/8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T) — `NotWinner`, no purchase.
+- Donate: [`B4iXYgJL…`](https://testnet.nearblocks.io/txns/B4iXYgJL19c4SJb7DBV6nv3mCMMJRTy7jcshTZtNv9pB); sweep: [`CDGPS1Nr…`](https://testnet.nearblocks.io/txns/CDGPS1Nr7saNnHxzw6RVjyXRP6tgwAonieHyncHritwq).
+- 14 refusals + 2 controls: `artifacts/refusals.json`; cache 32/32 with receipts.
+- 3 LLM steered picks refused + 1 honest paid: `artifacts/llm-onchain.json`.
+- OfferBook/CheckoutGate: **0 keys**; AgentAccount owner + scoped runner.
+
+The CP3 addresses/txs below are historical; `demo3` is current.
+
+## Live testnet (CP3, historical)
 
 | Role | Account |
 |---|---|

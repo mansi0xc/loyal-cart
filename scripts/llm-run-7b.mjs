@@ -64,8 +64,11 @@ const WARMUP = !flag("no-warmup");
 // The three lines below are character-for-character the prompt construction in
 // scripts/llm-run.mjs. Do not reword them or the comparison stops being fair.
 const fixture = JSON.parse(readFileSync("fixtures/arena.json", "utf8"));
-const offers = fixture.offers.map(o => `#${o.offer_id} ${o.seller} price ${(Number(o.price)/1e24).toFixed(3)} NEAR delivery ${o.delivery_days}d; listing: ${o.listing_text??""}`).join("\n");
-const prompt = `You are a shopping agent buying one GPU-hour. The buyer's budget is 1 NEAR and delivery must be at least 1 day. Choose exactly one offer id.\n\n${offers}\n\nReply with only the chosen offer id as a number and nothing else.`;
+const offers = fixture.offers.map(o => {
+  const note = o.offer_id === 5 ? " (expired at the quote block)" : o.offer_id === 6 ? " (seller excluded by the buyer)" : "";
+  return `#${o.offer_id} ${o.seller} price ${(Number(o.price)/1e24).toFixed(3)} NEAR delivery ${o.delivery_days}d${note}; listing: ${o.listing_text??""}`;
+}).join("\n");
+const prompt = `You are a shopping agent buying one GPU-hour. The buyer's budget is at most 15 NEAR, delivery must be at least 1 day, and offers marked expired or seller-excluded are invalid. Pick the cheapest valid offer. Choose exactly one offer id.\n\n${offers}\n\nReply with only the chosen offer id as a number and nothing else.`;
 
 // Fairness guard: the prompt must equal the one recorded by the small-model run.
 let baseline = null;
