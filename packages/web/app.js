@@ -56,7 +56,10 @@ let rpcUsed = null;
 const rpc = async (method, params) => {
   const order = rpcUsed ? [rpcUsed, ...RPCS.filter((u) => u !== rpcUsed)] : RPCS;
   let lastError;
-  for (const url of order) {
+  // two passes: the public node answers bursts with 429 (no CORS header), so wait and retry once
+  const tries = [...order, ...order];
+  for (const [i, url] of tries.entries()) {
+    if (i === order.length) await new Promise((r) => setTimeout(r, 1200));
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 9000);
