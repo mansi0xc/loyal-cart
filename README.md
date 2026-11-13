@@ -128,7 +128,7 @@ Fresh accounts, fresh contracts, locked. This is the evidence the page reads and
 - Winner checkout: [`Gnwf9psQ…`](https://testnet.nearblocks.io/txns/Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj) — quote 1, offer 1, `honest-a` paid 0.1 NEAR.
 - Non-winner refusal: [`8eMte9om…`](https://testnet.nearblocks.io/txns/8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T) — `NotWinner`, no purchase.
 - Donate: [`B4iXYgJL…`](https://testnet.nearblocks.io/txns/B4iXYgJL19c4SJb7DBV6nv3mCMMJRTy7jcshTZtNv9pB); sweep: [`CDGPS1Nr…`](https://testnet.nearblocks.io/txns/CDGPS1Nr7saNnHxzw6RVjyXRP6tgwAonieHyncHritwq).
-- 14 refusals + 2 controls: `artifacts/refusals.json`; cache 32/32 with receipts.
+- 14 refusals + 2 controls: `artifacts/refusals.json`; cache 35/35 with receipts.
 - 3 LLM steered picks refused + 1 honest paid: `artifacts/llm-onchain.json`.
 - Policy edge: a trade-off quote pays the **0.10/1-day** offer although **0.08/120-day** is cheapest (`quote_tradeoff`, tx `94tCwr2g…`). The 60/20/20 policy chooses delivery over the lowest price.
 - OfferBook/CheckoutGate: **0 keys**; AgentAccount owner + scoped runner.
