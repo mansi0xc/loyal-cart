@@ -63,7 +63,7 @@ if (!rpc) throw new Error(`no RPC answered: ${rpcUrls.join(", ")}`);
 const cache = { version: 1, network: "testnet", fetched_at: new Date().toISOString(), source: rpc, txs: {} };
 for (const [hash, sender] of senders) {
   try {
-    const tx = await call(rpc, "tx", { tx_hash: hash, sender_account_id: sender, wait_until: "FINAL" });
+    const tx = await call(rpc, "EXPERIMENTAL_tx_status", { tx_hash: hash, sender_account_id: sender, wait_until: "FINAL" });
     cache.txs[hash] = { sender, tx };
     console.log(`cached ${hash} (${sender})`);
   } catch (error) {

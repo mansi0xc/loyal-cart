@@ -45,6 +45,7 @@ cd loyal-cart
 make test          # 41 Rust + 17 Node tests
 make verify        # recompute the committed quote, no wallet
 make arena         # three attacks, fixed seed
+npm run deploy-and-demo -- --dry-run  # plan the final fresh run
 npm run ui         # interactive page at http://localhost:4173
 ```
 

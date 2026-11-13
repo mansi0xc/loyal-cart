@@ -9,6 +9,7 @@
     "arena": "node packages/arena/arena.mjs --fixture fixtures/arena.json",
     "arena:testnet": "node scripts/testnet/replay.mjs",
     "evidence:cache": "node scripts/evidence-cache.mjs --artifact artifacts/arena-testnet.json",
+    "deploy-and-demo": "node scripts/deploy-and-demo.mjs",
     "ui": "node scripts/serve.mjs",
     "test": "node --test packages/verifier/test/*.test.mjs packages/arena/test/*.test.mjs"
   },
