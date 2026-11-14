@@ -150,7 +150,31 @@ const load = async () => {
     sales: salesById.get(Number(o.offer_id)) ?? 0,
     listing_text: listing(role),
   }));
-  return { art, fixture, quote, quoteBlock, base };
+  // Optional second quote where the committed policy pays a dearer, faster offer over the cheapest one.
+  let trade = null;
+  const tq = art.quote_tradeoff;
+  if (tq && art.tradeoff_offers) {
+    const yocto = (s) => {
+      const [i, f = ""] = String(s).split(".");
+      return (BigInt(i) * 10n ** 24n + BigInt((f + "0".repeat(24)).slice(0, 24))).toString();
+    };
+    const sales = new Map(tq.offer_ids.map((id, i) => [Number(id), tq.seller_sales[i] ?? 0]));
+    const offers = Object.entries(art.tradeoff_offers).map(([role, o]) => ({
+      offer_id: Number(o.offer_id),
+      role: role.replaceAll("-", "_"),
+      seller: o.seller,
+      price: yocto(o.price),
+      delivery_days: Number(o.delivery),
+      // both offers were in the quote, so both were live at its block; the page only needs them to count as valid
+      expires_at_block: Number(tq.expires_at_block),
+      sales: sales.get(Number(o.offer_id)) ?? 0,
+      listing_text: "",
+      tx: o.tx,
+    }));
+    const cheapest = [...offers].sort((a, b) => (BigInt(a.price) < BigInt(b.price) ? -1 : 1))[0];
+    trade = { quote: tq, quoteBlock: Number(tq.quote_block), offers, cheapest, tx: art.tx.checkout_tradeoff };
+  }
+  return { art, fixture, quote, quoteBlock, base, trade };
 };
 
 // ---------------------------------------------------------------- hero receipt (the recorded quote)
@@ -202,14 +226,17 @@ const heroReceipt = ({ art, quote, quoteBlock, base }) => {
 };
 
 // ---------------------------------------------------------------- arena
-const setupArena = ({ art, quote, quoteBlock, base }) => {
+const setupArena = ({ art, quote, quoteBlock, base, trade }) => {
   const committed = art.policy;
   let policy = committed;
   const original = base.find((o) => o.role === "injector_valid").listing_text;
 
   $("#itemId").textContent = art.item_id;
+  const NUM = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+  $("#offerCount").textContent = NUM[base.length] ?? String(base.length);
+  $("#runDate").textContent = new Date(art.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   if ($("#policyShort")) $("#policyShort").textContent = `${art.committed_policy_hash.slice(0, 6)}..`;
-  $("#cmdTx").textContent = `node packages/verifier/verify.mjs --offer-book ${art.accounts.offerbook} --quote 3 --tx ${art.tx.refusal} --sender ${art.accounts.runner}`;
+  $("#cmdTx").textContent = `node packages/verifier/verify.mjs --offer-book ${art.accounts.offerbook} --quote ${art.quote_refusal?.quote_id ?? 3} --tx ${art.tx.refusal} --sender ${art.accounts.runner}`;
   $("#copyTx").dataset.copy = $("#cmdTx").textContent;
 
   const state = { bribe: 0, text: original, crookedPrice: 120, whatif: false };
@@ -218,14 +245,16 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
   const tallies = { bribe: 0, inject: 0, compete: 0 };
   let reprints = 0;
   let lastAnim = 0;
+  const tradeMode = () => state.whatif && !!trade;
+  const qb = () => (tradeMode() ? trade.quoteBlock : quoteBlock);
   const offersNow = () =>
-    base.map((o) => {
+    tradeMode() ? trade.offers.map((o) => ({ ...o })) : base.map((o) => {
       const copy = { ...o };
       if (o.role === "injector_valid") copy.listing_text = state.text;
       if (o.role === "crooked") copy.price = (BigInt(state.crookedPrice) * 10n ** 21n).toString();
       return copy;
     });
-  const winnerId = () => rankOffers(offersNow(), policy, quoteBlock)[0]?.offer_id;
+  const winnerId = () => rankOffers(offersNow(), policy, qb())[0]?.offer_id;
 
   const ranksEl = $("#ranks");
   const rows = new Map();
@@ -236,8 +265,10 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
     reprints += 1;
     const offers = offersNow();
     const byId = new Map(offers.map((o) => [Number(o.offer_id), o]));
-    const ranked = rankOffers(offers, policy, quoteBlock);
+    const ranked = rankOffers(offers, policy, qb());
     const first = new Map([...rows].map(([id, n]) => [id, n.getBoundingClientRect().top]));
+    const live = new Set(ranked.map((r) => r.offer_id));
+    rows.forEach((li, id) => { if (!live.has(id)) li.remove(); });
     ranked.forEach((r, i) => {
       const o = byId.get(r.offer_id);
       let li = rows.get(r.offer_id);
@@ -261,32 +292,38 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
     if (!reduced) {
       rows.forEach((li, id) => {
         const before = first.get(id);
-        if (before === undefined) return;
+        if (before === undefined || !li.isConnected) return;
         const dy = before - li.getBoundingClientRect().top;
         if (Math.abs(dy) < 1) return;
         li.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 480, easing: "steps(6)" });
       });
     }
     $("#filtered").innerHTML = offers
-      .map((o) => [o, invalidReason(o, policy, quoteBlock)])
+      .map((o) => [o, invalidReason(o, policy, qb())])
       .filter(([, why]) => why)
       .map(([o, why]) => row(`#${o.offer_id} ${label(o.role)}`, REASONS[why] ?? why))
       .join("") + `<div class="row"><span>not in the quote</span><span></span></div>`;
     $("#filtered").title = offers
-      .map((o) => [o, invalidReason(o, policy, quoteBlock)])
+      .map((o) => [o, invalidReason(o, policy, qb())])
       .filter(([, why]) => why)
       .map(([o, why]) => `#${o.offer_id}: ${REASONS_LONG[why] ?? why}`)
       .join("\n");
-    $("#arExtras").innerHTML = [
+    $("#arExtras").innerHTML = tradeMode()
+      ? [
+          row("LOWEST PRICE ALONE PAYS", `<b>#${trade.cheapest.offer_id}</b>`),
+          row("COMMITTED POLICY PAID", `<b>#${trade.quote.winner_offer_id}</b>`),
+          row(`&nbsp;&nbsp;on testnet`, `<a href="${explorer(trade.tx)}" target="_blank" rel="noreferrer">${short(trade.tx, 6, 4)}</a>`),
+        ].join("")
+      : [
       row("KICKBACK OFFERED", `<b>${state.bribe} N</b>`, state.bribe > 0 ? "hot" : ""),
       row("SCORE INPUT FOR KICKBACK", "<b>NONE</b>"),
       row("WINNER CHANGES", ""),
       row("&nbsp;&nbsp;bribe · text · price", `<b>${tallies.bribe} · ${tallies.inject} · ${tallies.compete}</b>`),
-    ].join("");
+        ].join("");
     const top = byId.get(ranked[0].offer_id);
     $("#arPaid").textContent = `PAY #${top.offer_id}`;
     $("#arAmt").textContent = `${near3(top.price)} N`;
-    $("#arHead").textContent = `QUOTE #${quote.quote_id} · ${reprints === 1 ? "PRINT" : `REPRINT ${reprints - 1}`}`;
+    $("#arHead").textContent = `QUOTE #${tradeMode() ? trade.quote.quote_id : quote.quote_id} · ${reprints === 1 ? "PRINT" : `REPRINT ${reprints - 1}`}`;
     $("#arPolicy").innerHTML = state.whatif
       ? `policy <b>WHAT-IF</b> · not committed`
       : `policy <span id="policyShort">${art.committed_policy_hash.slice(0, 6)}..</span> · committed`;
@@ -375,17 +412,32 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
     policy = on ? { ...committed, ...weights } : committed;
     $$(".lines .stamp").forEach((s) => s.remove());
     render();
+    if (on) explainWhatif();
   };
+  if (trade) {
+    $("#whatifIntro").innerHTML = `Quote #${trade.quote.quote_id} on testnet has two offers: <b>${near3(trade.cheapest.price)} N</b> that ships in <b>${trade.cheapest.delivery_days} days</b>, and a dearer one that ships in ${trade.offers.find((o) => o !== trade.cheapest).delivery_days}. The buyer's committed policy paid the fast one. Move the weights to see when "best" changes.`;
+  }
   const wInputs = [
     ["#wPrice", "price_weight"],
     ["#wDelivery", "delivery_weight"],
     ["#wRep", "reputation_weight"],
   ];
-  const committedWinner = rankOffers(base, committed, quoteBlock)[0]?.offer_id;
+  const committedWinner = () => rankOffers(offersNow(), committed, qb())[0]?.offer_id;
   const explainWhatif = () => {
     const w = winnerId();
+    const tag = (id) => {
+      const o = offersNow().find((x) => Number(x.offer_id) === Number(id));
+      return o ? `#${id} (${near3(o.price)} N, ${o.delivery_days}-day)` : `#${id}`;
+    };
+    if (trade) {
+      $("#whatifExplain").innerHTML =
+        Number(w) === Number(trade.quote.winner_offer_id)
+          ? `Under your weights: <b>${tag(w)}</b>, the offer the committed policy paid on testnet. A lowest-price rule would have paid ${tag(trade.cheapest.offer_id)}.`
+          : `Under your weights: <b>${tag(w)}</b>. Different buyers, different "best". On chain the quote was ranked by the committed policy, which paid ${tag(trade.quote.winner_offer_id)}; changing that needs a new commitment and a new quote.`;
+      return;
+    }
     $("#whatifExplain").innerHTML =
-      w === committedWinner
+      w === committedWinner()
         ? `Winner under your weights: <b>#${w}</b>, the same as the committed policy. A local what-if; on chain the quote is ranked only by the policy the buyer committed before any offer was read.`
         : `Winner under your weights: <b>#${w}</b>. Different buyers, different "best". On chain this needs a new commitment and a new quote; nobody can swap the policy under an existing quote.`;
   };
@@ -419,15 +471,15 @@ const setupArena = ({ art, quote, quoteBlock, base }) => {
     $$(".lines .stamp").forEach((s) => s.remove());
     const li = rows.get(id);
     // the gate only knows the committed policy, even while the what-if tab is open
-    const w = rankOffers(offersNow(), committed, quoteBlock)[0]?.offer_id;
-    const o = base.find((x) => Number(x.offer_id) === id);
+    const w = rankOffers(offersNow(), committed, qb())[0]?.offer_id;
+    const o = offersNow().find((x) => Number(x.offer_id) === id);
     if (id === w) {
       li.append(el("span", "stamp ink", "PAID"));
       toast(`Gate check passes: <b>#${id}</b> is the quote winner, so the seller is paid. (Simulated here.)`);
     } else {
       li.append(el("span", "stamp red", "NOT WINNER"));
       const real =
-        id === Number(art.refused_offer_id)
+        !tradeMode() && id === Number(art.refused_offer_id)
           ? ` This exact refusal happened on testnet: <a href="${explorer(art.tx.refusal)}" target="_blank" rel="noreferrer">${short(art.tx.refusal, 8, 6)}</a>.`
           : "";
       toast(`Refused: <b>#${id} ${label(o.role)}</b> is not the winner. The deposit goes back to the agent. (Simulated here.)${real}`);
@@ -508,7 +560,7 @@ const proof = ({ art }) => {
       lines =
         kind === "win"
           ? [["d", `tx ${short(hash, 8, 6)} · recorded`], ["g", `✓ ${nearStr(art.winner_seller_credit_yocto)} N → ${art.purchase_winner.seller.split(".")[0]}`]]
-          : [["d", `tx ${short(hash, 8, 6)} · recorded`], ["r", "✗ Smart contract panicked: NotWinner"], ["g", "✓ no purchase recorded for quote 3"]];
+          : [["d", `tx ${short(hash, 8, 6)} · recorded`], ["r", "✗ Smart contract panicked: NotWinner"], ["g", `✓ no purchase recorded for quote ${art.quote_refusal?.quote_id ?? 3}`]];
     }
     await write(term, lines);
     card.classList.add("done");
@@ -519,6 +571,8 @@ const proof = ({ art }) => {
     if (started || !entries.some((e) => e.isIntersecting)) return;
     started = true;
     obs.disconnect();
+    $("#txWin [data-stamp]").textContent = `PAID · #${art.purchase_winner.offer_id}`;
+    $("#txRefuse [data-stamp]").textContent = `NOT WINNER · #${art.refused_offer_id}`;
     run($("#txWin"), art.tx.checkout_winner, "win");
     setTimeout(() => run($("#txRefuse"), art.tx.refusal, "refuse"), reduced ? 0 : 600);
   }, { threshold: 0.2 }).observe($("#proofGrid"));

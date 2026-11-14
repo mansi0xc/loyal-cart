@@ -26,7 +26,7 @@
 
     <section class="hero" id="top">
       <div class="hero-copy">
-        <p class="eyebrow">NEAR testnet prototype · recorded run, 12 Nov 2026</p>
+        <p class="eyebrow">NEAR testnet prototype · demo3 recorded run, <span id="runDate">13 Nov 2026</span></p>
         <h1>Every purchase, itemised. <i>No line that changes the winner.</i></h1>
         <p class="lede">
           The checkout pays only the best-scoring offer in a complete public offer book, under a scoring policy the buyer
@@ -55,7 +55,7 @@
           <p class="eyebrow">01 · Try to cheat it</p>
           <h2>Sneak something onto the bill.</h2>
           <p class="sub">
-            These are the seven real offers posted on testnet for <code id="itemId">gpu-hour</code>, ranked by the same rule the
+            These are the <span id="offerCount">three</span> real offers posted on testnet for <code id="itemId">gpu-hour</code>, ranked by the same rule the
             contract uses. The ranking runs in your browser and is tested against the verifier. Every change reprints the receipt.
           </p>
         </div>
@@ -88,8 +88,8 @@
               <p>Edit the injector's listing text. Make it as persuasive as you like.</p>
               <textarea id="inject" rows="3" spellcheck="false" aria-label="Injector listing text"></textarea>
               <div class="versus">
-                <div class="bad"><span>Scripted baseline (no LLM)</span><b id="naivePick">picks #30</b></div>
-                <div class="good"><span>Loyal Cart</span><b id="lcPick">pays #26</b></div>
+                <div class="bad"><span>Scripted baseline (no LLM)</span><b id="naivePick">picks …</b></div>
+                <div class="good"><span>Loyal Cart</span><b id="lcPick">pays …</b></div>
               </div>
               <p class="note">
                 On chain the offer stores only a 32-byte hash of its listing. The ranker never reads the text, so the words can't
@@ -110,7 +110,7 @@
 
             <div class="pane" data-pane="whatif" role="tabpanel" hidden>
               <h3>Write your own scoring policy</h3>
-              <p>The buyer, not the merchant, decides what "best" means. Move the weights and watch the ranking change.</p>
+              <p id="whatifIntro">The buyer, not the merchant, decides what "best" means. Move the weights and watch the ranking change.</p>
               <label class="slider"><span>Price</span><input type="range" id="wPrice" min="0" max="100" step="1" value="60" /><output id="wPriceOut">60</output></label>
               <label class="slider"><span>Delivery</span><input type="range" id="wDelivery" min="0" max="100" step="1" value="20" /><output id="wDeliveryOut">20</output></label>
               <label class="slider"><span>Seller history</span><input type="range" id="wRep" min="0" max="100" step="1" value="20" /><output id="wRepOut">20</output></label>
@@ -133,8 +133,8 @@
             <div class="paper-wrap">
               <div class="receipt" id="arenaReceipt" aria-live="polite">
                 <div class="c big">LOYAL CART</div>
-                <div class="c dim" id="arHead">QUOTE #2 · REPRINT 1</div>
-                <div class="c dim" id="arPolicy">policy <span id="policyShort">2959b6..</span> · committed</div>
+                <div class="c dim" id="arHead">QUOTE</div>
+                <div class="c dim" id="arPolicy">policy <span id="policyShort">…</span> · committed</div>
                 <div class="c dim small" id="arFormula">score = 60·price + 20·days + 20·(100−sales)</div>
                 <div class="c dim small">lowest wins</div>
                 <hr />
@@ -144,7 +144,7 @@
                 <hr />
                 <div id="arExtras"></div>
                 <hr />
-                <div class="row big"><span id="arPaid">PAY #26</span><span id="arAmt">0.100 N</span></div>
+                <div class="row big"><span id="arPaid">PAY</span><span id="arAmt">0.100 N</span></div>
                 <div class="c dim small">tap PAY on a line to try the gate · simulated</div>
               </div>
             </div>
@@ -173,7 +173,7 @@
               <div class="row big"><span>TO SELLER</span><span><b data-amount>0.1</b> N</span></div>
               <a class="tx-link" data-link target="_blank" rel="noreferrer">open in explorer ↗</a>
             </div>
-            <div class="stamp ink" data-stamp>PAID · #26</div>
+            <div class="stamp ink" data-stamp>PAID</div>
           </article>
           <article class="tx" id="txRefuse">
             <div class="receipt slim">
@@ -185,7 +185,7 @@
               <div class="row big"><span>TO SELLER</span><span><b data-amount>0</b> N</span></div>
               <a class="tx-link" data-link target="_blank" rel="noreferrer">open in explorer ↗</a>
             </div>
-            <div class="stamp red" data-stamp>NOT WINNER · #30</div>
+            <div class="stamp red" data-stamp>NOT WINNER</div>
           </article>
         </div>
       </section>
