@@ -1,0 +1,100 @@
+{
+ "phase": "demo3 final testnet deployment",
+ "network": "testnet",
+ "rpc": "https://rpc.testnet.fastnear.com",
+ "created_at": "2026-11-13T17:08:37.240Z",
+ "run_id": "demo3",
+ "accounts": {
+  "owner": "owner.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "offerbook": "offerbook.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "checkout": "checkout.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "agent": "agent.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "runner": "runner.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "honest_a": "honest-a.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "injector_valid": "injector-valid.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "crooked": "crooked.demo3.lc-fund-mwf7tq7qkv.testnet",
+  "__run": "demo3.lc-fund-mwf7tq7qkv.testnet"
+ },
+ "wasm_sha256": {
+  "offer_book": "fb94e3eda80522d72f2ea37a9c33276b9997a83c5934b8790d40c0288fbe5f37",
+  "checkout_gate": "4b18f3373004fd44f91323d65fa7a8b25978f3189bd7ed6fa80c412a254ebf4f",
+  "agent_account": "b70796e39b27012c3b397e6a1b9fb5b4a782bbe6ec1c89f5306b2512a835d6f0"
+ },
+ "code_hashes": {
+  "offerbook": "fb94e3eda80522d72f2ea37a9c33276b9997a83c5934b8790d40c0288fbe5f37",
+  "checkout": "4b18f3373004fd44f91323d65fa7a8b25978f3189bd7ed6fa80c412a254ebf4f",
+  "agent": "b70796e39b27012c3b397e6a1b9fb5b4a782bbe6ec1c89f5306b2512a835d6f0"
+ },
+ "lock_check": {
+  "offer_book_zero_keys": true,
+  "checkout_zero_keys": true,
+  "agent_owner_plus_runner": true
+ },
+ "access_keys": {
+  "offerbook": [],
+  "checkout": [],
+  "agent": [
+   {
+    "public_key": "ed25519:uHWGPh3ZGGaYzzYQqXPZ5ADKCC2hdda1325QXDzBrMt",
+    "permission": "FullAccess",
+    "allowance": null,
+    "receiver_id": null,
+    "method_names": null
+   },
+   {
+    "public_key": "ed25519:2ej4pm4ZDYjUZq9MdiqhcoLZCf3pSYzDo3zBWPPuFA6v",
+    "permission": {
+     "FunctionCall": {
+      "allowance": "250000000000000000000000",
+      "method_names": [
+       "execute_purchase"
+      ],
+      "receiver_id": "agent.demo3.lc-fund-mwf7tq7qkv.testnet"
+     }
+    },
+    "allowance": "250000000000000000000000",
+    "receiver_id": "agent.demo3.lc-fund-mwf7tq7qkv.testnet",
+    "method_names": [
+     "execute_purchase"
+    ]
+   }
+  ]
+ },
+ "tx": {
+  "run_account": "k8bsQFFrT1vse668hC68RqtfCPkNqVqmjs4mqDK6hWs",
+  "account_owner": "13s34Sv61MbuzCfr2UcHJZ4j5R1xjgSuTgfovj6Q5Wvi",
+  "account_offerbook": "FgtGisZMrLTr6exkvPcgEYdzgECcbB8eYP1CRnTHPTfr",
+  "account_checkout": "5tzBTwXdt5ApE4dASKh9T3ZkN5pfhm2izQasueV1a4Jg",
+  "account_agent": "HMLBVwiQHHwVS6JJLtB9Mud8gSKEp5NGy4TscqWxTxbb",
+  "account_runner": "3B4NtbzN2TxgYgW1SZ1m4vztKfftVZAM2zhAGv2m3nRD",
+  "account_honest_a": "2DGmTG51NXH4ZJp5n15URPHPuDsSwAYPM8PmoyozFaz7",
+  "account_injector_valid": "Fg5C77gsSZfhUZu1K3RnFXfocoNn2gWaL9qwNdAwy7ce",
+  "account_crooked": "8Dj8RVofMANBEtAr6FbXoYaT7mpiCEzYrYEB35ufgCR5",
+  "deploy_offerbook": "Druuv1Kp1KQRpCvaDnL273EhJnRJNknoqizrBeuUuyba",
+  "init_offerbook": "AaFmNKn2nFScAe1CKk7111LXtVaeGJWTFAvWrqjDzGKq",
+  "set_checkout_gate": "2kkGVP9ygW1jTf4acVnuqpKtLDXLFB9UJPcymdn9oisL",
+  "deploy_checkout": "HtLHEwCXBVv13mJnKKHbnJkP3Z5D6KZkCnELNe9ZWyf7",
+  "init_checkout": "9PsH4D7sHL8cfeh5h219fU9WfugwzD1DQKLLzViZqgus",
+  "deploy_agent": "HNvwzB5WKva9GV6Y1jpS88Vq9fa6Wsx6Z9Zcw3eoMk2y",
+  "init_agent": "6nXwWAKtsgFZDe2N4SVSo9PwZtrPf798HGKhW5BS76tx",
+  "add_owner_key": "4iRqE1zVKSW7ccjNvnyFcXLBbwAY4ZkD5KeexGCZhxpJ",
+  "delete_agent_deployer_key": "9qVG8iCWoA4zM7Em77PTSK7HXxn7SVRdDkgQ2sHU9dVq",
+  "runner_key": "CqZfha4awMm81qa6cTG4yfHi85j1eqec3uFN3KZpUJbs",
+  "delete_offerbook_key": "5nMerLpY9s4a2SVbXdqVY8Zjzka3qLMyfWUCojGdevAc",
+  "delete_checkout_key": "7GLcYXa5pwQCBus3rDWEZY68fKNRUftGHgutz767Urc",
+  "deposit": "DYRMuFse8bmCYCjJWYrj8BaB4n4Cq4ovJ1YxVPeTrAB6",
+  "commit_policy": "D7oR6KgEZGy32mftrHWasrJHBbLJEPDz9KGnieCYh233",
+  "quote_winner": "Ewbb3nW1CrUyh58UHcB3riqh4obsVrkrWFLSnpXJ8NPy",
+  "checkout_winner": "Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj",
+  "quote_refusal": "FPo59FWuRZXGnX6JMTok1rfa8W1ZABM6q7QFtfaJTACA",
+  "refusal": "8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T",
+  "donate": "B4iXYgJL19c4SJb7DBV6nv3mCMMJRTy7jcshTZtNv9pB",
+  "plain_transfer": "3cnGE19uUVh2U68HPHcUoenJdJtEnQpFfbfE2tnKZA6U",
+  "sweep": "CDGPS1Nr7saNnHxzw6RVjyXRP6tgwAonieHyncHritwq",
+  "refusal_valid_offer": "3bV3Z7uCzv7ZpcCsQZmbP5ZCQ6KzwLVHfcQ4GSzEcfKR",
+  "checkout_tradeoff": "94tCwr2gRrHpbefj64PsDtCj4XWit1S4eEcPSZi25CqV"
+ },
+ "refusals": "artifacts/refusals.json",
+ "evidence": "artifacts/arena-testnet.json",
+ "note": "Demo3 is the final run. OfferBook and CheckoutGate have 0 access keys. The AgentAccount has one owner full-access key and one runner function-call key scoped to execute_purchase."
+}

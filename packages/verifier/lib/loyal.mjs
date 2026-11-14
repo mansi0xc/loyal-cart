@@ -191,5 +191,6 @@ export const verifyQuote = (fixture) => {
 
 export const formatNear = (yocto) => {
   const milli = BigInt(yocto) / 10n ** 21n;
-  return (Number(milli) / 1000).toFixed(2);
+  const near = Number(milli) / 1000;
+  return near.toFixed(near < 1 ? 3 : 2);
 };

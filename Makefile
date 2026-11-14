@@ -1,4 +1,4 @@
-.PHONY: evidence-cache test verify arena fmt lint build-wasm test-integration
+.PHONY: evidence-cache test verify arena judge fmt lint build-wasm test-integration
 
 test:
 	cargo test --workspace
@@ -9,6 +9,9 @@ verify:
 
 arena:
 	node packages/arena/arena.mjs --fixture fixtures/arena.json
+
+judge: test verify arena
+	npm run arena:testnet
 
 fmt:
 	cargo fmt --all -- --check

@@ -126,7 +126,9 @@ test("tie-break uses the lower price when scores are equal", () => {
   assert.equal(ranked[0].offer_id, 2);
 });
 
-test("formatNear prints two decimals", () => {
+test("formatNear keeps sub-NEAR margins visible", () => {
   assert.equal(formatNear(10n * NEAR_YOCTO), "10.00");
   assert.equal(formatNear(11n * NEAR_YOCTO), "11.00");
+  assert.equal(formatNear(100_000_000_000_000_000_000_000n), "0.100");
+  assert.equal(formatNear(105_000_000_000_000_000_000_000n), "0.105");
 });

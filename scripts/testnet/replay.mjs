@@ -21,7 +21,7 @@ const callRpc = async (url, method, params) => {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(30000),
   });
   const json = await response.json();
   if (json.error) throw new Error(`${method}: ${json.error.message ?? JSON.stringify(json.error)}`);
@@ -98,7 +98,9 @@ try {
     }
   }
 
-  const quote = await view(accounts.offerbook, "get_quote", { quote_id: 2 });
+  const winnerQuoteId = artifact.quote_winner.quote_id;
+  const refusalQuoteId = artifact.quote_refusal.quote_id;
+  const quote = await view(accounts.offerbook, "get_quote", { quote_id: winnerQuoteId });
   add(same(quote.winner_offer_id, artifact.quote_winner.winner_offer_id), "quote_winner", `#${quote.winner_offer_id}`);
   add(
     quote.offer_ids.length === artifact.quote_winner.offer_ids.length &&
@@ -116,10 +118,11 @@ try {
       event ? `#${event.data.offer_id} ${event.data.seller} ${event.data.price}` : "offer_posted event missing",
     );
   }
-  add(new Set(Object.values(artifact.offers).map((offer) => offer.seller)).size === 7, "seven_distinct_sellers", "7");
+  const sellers = new Set(Object.values(artifact.offers).map((offer) => offer.seller));
+  add(sellers.size === Object.keys(artifact.offers).length, "distinct_sellers", `${sellers.size}`);
 
   const winnerTx = await tx(artifact.tx.checkout_winner, accounts.runner);
-  const purchase = findEvent(winnerTx, "purchase", (event) => same(event.data.quote_id, 2));
+  const purchase = findEvent(winnerTx, "purchase", (event) => same(event.data.quote_id, winnerQuoteId));
   add(
     Boolean(purchase) &&
       same(purchase.data.offer_id, artifact.quote_winner.winner_offer_id) &&
@@ -132,8 +135,8 @@ try {
   const refusalTx = await tx(artifact.tx.refusal, accounts.runner);
   const refusalFailure = refusalTx.receipts_outcome.find((receipt) => JSON.stringify(receipt.outcome.status).includes("NotWinner"));
   add(Boolean(refusalFailure), "refusal_names_not_winner", "Smart contract panicked: NotWinner");
-  const refusedPurchase = await view(accounts.checkout, "has_purchase", { quote_id: 3 });
-  add(refusedPurchase === false, "refusal_no_purchase", `has_purchase(3)=${refusedPurchase}`);
+  const refusedPurchase = await view(accounts.checkout, "has_purchase", { quote_id: refusalQuoteId });
+  add(refusedPurchase === false, "refusal_no_purchase", `has_purchase(${refusalQuoteId})=${refusedPurchase}`);
 
   const policyTx = await tx(artifact.tx.commit_policy, accounts.owner);
   const policyEvent = findEvent(policyTx, "policy_committed");

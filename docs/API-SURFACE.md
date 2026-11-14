@@ -44,12 +44,12 @@ names the seller of the winning offer.
 
 ## Tests and testnet evidence
 
-- `non_winner_is_refused` and the testnet refusal `4Hfakr…` show the only
+- `non_winner_is_refused` and the demo3 refusal `8eMte9om…` show the only
   payout path rejects a non-winner.
-- `a_merchant_donation_is_forwarded` and the testnet donate `4MeYcu…` show
+- `a_merchant_donation_is_forwarded` and the demo3 donate `B4iXYg…` show
   `donate` → owner.
-- The sandbox and testnet sweep show `sweep` → owner.
-- The CP3 `view_access_key_list` check shows OfferBook and CheckoutGate have no
+- The sandbox and demo3 sweep show `sweep` → owner.
+- The demo3 `view_access_key_list` check shows OfferBook and CheckoutGate have no
   full-access key; AgentAccount has the owner key plus the scoped runner key.
 
 **Limit:** this audit covers the current source. A full-access key on the

@@ -1,7 +1,7 @@
 # Loyal Cart — SPEC (CP1 freeze)
 
 **Status:** CP1 spec freeze, 2026-11-12. Nothing in this document is a verified claim unless the claims ledger says VERIFIED. All user-facing claims are PLANNED until CP4.
-**Deadline:** 2026-11-14 23:59 UTC. **Tracks:** realworld, business, swarms, open.
+**Deadline:** 2026-11-14 23:59 UTC. **Tracks:** business, agents, realworld, open.
 
 ---
 

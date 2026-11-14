@@ -158,6 +158,36 @@ orthogonal direction — it constrains what sellers may charge, Loyal Cart const
 choose. They compose rather than compete. Its `docs/NOVELTY.md` and its unusually blunt limitations
 section are a good template for Loyal Cart's own.
 
+**Accord** — `github.com/Adityaakr/accord` (this hackathon; business/agents/realworld). Open tenders:
+sealed prices are revealed after the deadline, and an on-chain board "picks the lowest valid price, by
+a rule anyone can call"; the winner becomes the vendor of a procurement agreement. **Covers:** sealed
+tenders and a public lowest-price award. **Not Loyal Cart:** Accord's rule is lowest price; Loyal Cart's
+rule is the buyer's committed multi-factor policy, and the checkout refuses any non-winner. Quote #4 is
+the proof the two rules differ: a lowest-price rule would have paid #8 at 0.08/120 days; the committed
+policy paid #9 at 0.10/1 day. Recorded from the CP9 scan, 2026-11-14.
+
+**Restock Relay** — `github.com/fawazdevx/restock-relay` (this hackathon). Scores supplier quotes
+55/25/20 on price/delivery/trust in a server policy engine; its README says "the score never
+authorizes a payment." **Covers:** supplier ranking as advice. **Not Loyal Cart:** the opposite design —
+Loyal Cart makes the score the payment condition, enforced on chain. Recorded from the CP9 scan.
+
+**VeilProcure** — `github.com/Olalekan2345/veilprocure` (this hackathon). The buyer hashes its
+evaluation rules on NEAR, suppliers commit sealed quotes, ranking runs off-chain, and escrow pays the
+supplier the buyer selects. **Covers:** sealed procurement with a committed rule hash. **Not Loyal
+Cart:** the ranking runs off-chain and the buyer still selects; Loyal Cart's contract refuses any offer
+that is not the winner. Recorded from the CP9 scan.
+
+**Day One** — `github.com/CoderofVibes/day-one` (this hackathon). A procurement agent buying inside
+on-chain spending limits, with director approval and QC-gated escrow. **Covers:** how much an agent may
+spend and when it may pay. **Not Loyal Cart:** limits and approvals decide *whether* a payment happens;
+Loyal Cart decides *which offer* wins under a committed policy. Recorded from the CP9 scan.
+
+**SwarmBid / General Contractor / SwarmShop** — this hackathon. Agent/bid marketplaces where the agent
+picks the cheapest bid or counters once (SwarmShop pays the cheapest fix that passes tests). **Covers:**
+agent selection of a bid. **Not Loyal Cart:** the choice is the agent's; in Loyal Cart the contract
+recomputes the winner under the committed multi-factor policy and refuses a non-winner. Recorded from
+the CP9 scan.
+
 **AP2** — `github.com/google-agentic-commerce/AP2`. Signed mandates as the authorization artifact for
 agent payments. **Covers:** authorization — this payment was authorised for this cart by this user.
 **Not Loyal Cart:** the signature is over the transaction, not the decision. This is exactly the gap
@@ -351,4 +381,9 @@ All fetched 2026-11-12.
 - Mastercard Verifiable Intent — <https://www.mastercard.com/us/en/news-and-trends/stories/2026/verifiable-intent.html> · <https://github.com/agent-intent/verifiable-intent>
 - Visa TAP — <https://corporate.visa.com/en/sites/visa-perspectives/newsroom/visa-unveils-trusted-agent-protocol-for-ai-commerce.html>
 - MEV Blocker — <https://docs.mevblocker.io/concepts/how-it-works>
+- Accord — <https://github.com/Adityaakr/accord>
+- Restock Relay — <https://github.com/fawazdevx/restock-relay>
+- VeilProcure — <https://github.com/Olalekan2345/veilprocure>
+- Day One — <https://github.com/CoderofVibes/day-one>
+- SwarmBid — <https://github.com/ykbojak-alt/hivebid>; General Contractor — <https://github.com/teon101/near-general-contractor>; SwarmShop — <https://github.com/mohammedfirdouss/swarmshop>
 - Sealed-bid auctions, DeFi '25 — <https://doi.org/10.1145/3733815.3764043> · <https://arxiv.org/html/2510.19491> · <https://github.com/TimmMu/tee-confidential-auctions>

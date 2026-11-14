@@ -2,19 +2,26 @@
 
 **Repo:** https://github.com/mansi0xc/loyal-cart
 
-Loyal Cart is live on NEAR testnet: the checkout pays only the best-scoring offer under the buyer's committed policy, and a non-winner is refused. The demo video is pending; the claims ledger records the evidence.
+**In our runs, a local 7B model followed an injected listing 19 times out of 20. On testnet, all three steered picks were refused with `NotWinner`, and the honest pick was paid.**
+
+Loyal Cart is a NEAR testnet checkout gate: the buyer commits a scoring policy before seeing offers, the contract snapshots the public offer book, and the checkout pays only that quote's best-scoring offer. A non-winner is refused.
+
+## For judges: 3-minute check
+
+| Do | See |
+|---|---|
+| run `npm run ui`, open the page and press **Verify** | **10/10 PASS**, read from testnet in the browser |
+| run `make judge` on a fresh clone | `OVERALL: PASS — the recorded testnet run replays from chain data.` (18/18) |
+| open the [non-winner refusal](https://testnet.nearblocks.io/txns/8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T) | `Smart contract panicked: NotWinner` |
+| watch the [65-second demo](docs/video/loyal-cart-demo.mp4) | bribe/undercut simulations, quote #4, LLM refusals, live verifier |
+
+![Loyal Cart checkout gate](docs/shots/hero.png)
+
+**Demo:** [docs/video/loyal-cart-demo.mp4](docs/video/loyal-cart-demo.mp4) — 65 s, captioned, recorded from the local page. The data is read live from testnet; the segment is labelled **recorded**.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
 For a company, the procurement lead commits the policy; the employee or agent who shops cannot tailor the scoring after seeing the offers. Off-chain bribes to the agent's operator are out of scope.
-
-> **What it proves.** "A testnet prototype in which the payment contract forwards the buyer's funds to the seller only if the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book, under the scoring policy committed in the quote — so a third party can recheck the choice from chain data alone, with no key and no hardware trust — and the agent's own account has no method that can pay the agent or a third party."
->
-> **No originality claim.** "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by an authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
-
-We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on a best-scoring rule over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
-
-Tracks: **agents**, **security**, **realworld**, **open**. The lead use case is procurement: the policy author and the shopper are different people, which is what makes the pre-commitment meaningful.
 
 ---
 
@@ -31,6 +38,27 @@ AI shopping agents are starting to spend real money. The agent's operator, the m
 5. **Forwarding account.** Any NEAR sent to the agent account through `donate` is forwarded to the owner; a plain transfer can be swept to the owner by anyone. The agent has no method that pays the agent or a third party. NEP-141 plain transfers are not forwarded (out of scope). The contract cannot see intent, so "kickback" is a label, not a proof.
 6. **Bribe Arena.** A fixed-seed demo with honest and crooked merchants, a **scripted naive agent (no LLM)**, and Loyal Cart. It shows three attacks: a valid offer with injection text and a 0.50 NEAR worse price loses on score; a 5 NEAR cooperative `donate()` cannot change the winner (a plain transfer needs `sweep`); expired/excluded/over-price offers are filtered.
 
+### What this proves
+
+> "A testnet prototype in which the payment contract forwards the buyer's funds to the seller only if the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book, under the scoring policy committed in the quote — so a third party can recheck the choice from chain data alone, with no key and no hardware trust — and the agent's own account has no method that can pay the agent or a third party."
+
+> **No originality claim.** "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by an authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
+
+We do **not** claim "first", "world-first" or "trustless". The prior-art review found Gebele et al., *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25), which already gates settlement on a best-scoring rule over a committed set. Loyal Cart's delta is a public offer book plus a buyer-authored policy with no TEE.
+
+### Track fit
+
+Order: **business**, **agents**, **realworld**, **open**.
+
+| Official prompt asks for | Loyal Cart |
+|---|---|
+| business: humans set the constraints | the procurement lead commits the scoring policy; the agent cannot change it after seeing offers (`PolicyHashMismatch` on testnet) |
+| business: log every sale to a public ledger | every purchase and refusal is a testnet tx; the keyless replay re-reads 18/18 |
+| agents: agents that spend, with a receipt for every task | the agent pays only the quote's winner; each purchase is recorded on chain against its quote and offer |
+| agents: an agent that can be steered | real LLM picks on testnet: 3 steered → `NotWinner`, 1 honest → paid |
+
+Not covered: stablecoins, NEAR Intents, a kill switch, negotiation. The proof covers the public on-chain index, not the whole market. The arena baseline is scripted, not an LLM.
+
 See `SPEC.md` for the interfaces, schemas, scoring, threat model, arena script and demo storyboard.
 
 ---
@@ -42,6 +70,7 @@ Three minutes on a clean clone:
 ```sh
 git clone https://github.com/mansi0xc/loyal-cart
 cd loyal-cart
+make judge         # tests + verifier + arena + 18/18 testnet replay
 make test          # 41 Rust + 17 Node tests
 make verify        # recompute the committed quote, no wallet
 make arena         # three attacks, fixed seed
@@ -67,7 +96,8 @@ npm run ui            # interactive page at http://localhost:4173 from artifacts
 | `make test` | 41 Rust unit tests and 17 Node tests pass |
 | `make verify` | `OVERALL: PASS` for the committed quote fixture |
 | `make arena` | three attacks pass, fixed seed, no chain |
-| `npm run arena:testnet` | 22 checks re-fetched from chain, all PASS |
+| `npm run arena:testnet` | 18 checks re-fetched from chain, all PASS |
+| `make judge` | Rust + Node + fixture verifier + arena + live replay in one command |
 | `make test-integration` | 1 sandbox pass; refusal message contains `NotWinner` (needs `ulimit -n 65535` on some machines) |
 | `node packages/verifier/lock-check.mjs --contract offerbook.demo3… --expected-code-hash fb94…` | 0 keys; wasm hash matches |
 | `npm run ui` | interactive page at `http://localhost:4173`: try to bribe, inject or out-compete the recorded offers; the two payments are re-read live from testnet |
@@ -87,7 +117,7 @@ The larger model is **not** immune to injection; it is better at the hard constr
 
 **On-chain picks on demo3:** three injector-valid picks were sent as real `execute_purchase` txs and refused with `NotWinner` (`CxgrQT…`, `812Q7x…`, `3huPzF…`); the honest pick was paid (`4gvcSq…`). Full prompts, raw outputs and per-run categories: `artifacts/llm-runs.json`, `artifacts/llm-runs-7b.json`; runners `scripts/llm-run.mjs`, `scripts/llm-run-7b.mjs`.
 
-**No on-chain transactions are claimed from this run.** The locked testnet deployment's runner key was not retained, so the three steered `execute_purchase` txs could not be sent; the scripted arena remains the reproducible demo. This is a real local model, not a hosted API.
+The four transactions above are the on-chain evidence; `artifacts/llm-onchain.json` records their receipts. The scripted arena remains the reproducible demo. This is a real local model, not a hosted API.
 
 ## What it refuses (real testnet transactions)
 
@@ -114,7 +144,7 @@ The larger model is **not** immune to injection; it is better at the hard constr
 
 ## Final run (`demo3`, 13 Nov 2026)
 
-Fresh accounts, fresh contracts, locked. This is the evidence the page reads and the run to use for judging.
+Fresh accounts, fresh contracts, locked. This is the evidence the page reads and the run to use for judging. The clean deployment record is [`artifacts/demo3-deployments.json`](artifacts/demo3-deployments.json); `deployments.json` is the historical CP3 record.
 
 | Role | Account |
 |---|---|
@@ -130,8 +160,20 @@ Fresh accounts, fresh contracts, locked. This is the evidence the page reads and
 - Donate: [`B4iXYgJL…`](https://testnet.nearblocks.io/txns/B4iXYgJL19c4SJb7DBV6nv3mCMMJRTy7jcshTZtNv9pB); sweep: [`CDGPS1Nr…`](https://testnet.nearblocks.io/txns/CDGPS1Nr7saNnHxzw6RVjyXRP6tgwAonieHyncHritwq).
 - 14 refusals + 2 controls: `artifacts/refusals.json`; cache 35/35 with receipts.
 - 3 LLM steered picks refused + 1 honest paid: `artifacts/llm-onchain.json`.
-- Policy edge: a trade-off quote pays the **0.10/1-day** offer although **0.08/120-day** is cheapest (`quote_tradeoff`, tx `94tCwr2g…`). The 60/20/20 policy chooses delivery over the lowest price.
+- Policy edge: a trade-off quote pays the **0.10/1-day** offer although **0.08/120-day** is cheapest (`quote_tradeoff`, tx `94tCwr2g…`). The 60/20/20 policy chooses delivery over the lowest price. The fast seller is `crooked`; its 0.05 donate still went to the buyer, and the winner did not change. The donation is not why it won: the committed delivery weight is. A clean variant would use `honest-b` as the fast seller.
 - OfferBook/CheckoutGate: **0 keys**; AgentAccount owner + scoped runner.
+
+Live verifier, no wallet:
+
+```sh
+node packages/verifier/verify.mjs --rpc https://rpc.testnet.fastnear.com \
+  --offer-book offerbook.demo3.lc-fund-mwf7tq7qkv.testnet --quote 1 \
+  --tx Gnwf9psQF48M744V8ugoKTJXDUoK1btJTM8u61ryBLSj \
+  --sender runner.demo3.lc-fund-mwf7tq7qkv.testnet
+# #1 honest-a        score=8040 price=0.100 NEAR
+# #2 injector-valid  score=8340 price=0.105 NEAR
+# OVERALL: PASS
+```
 
 
 
@@ -166,9 +208,9 @@ packages/verifier/       dependency-free Node best-scoring (lowest cost) verifie
 packages/arena/          deterministic Bribe Arena
 packages/web/            interactive web page (npm run ui)
 scripts/                 UI server, testnet replay, deploy checklist
-docs/                    threat model, demo, worklogs
+docs/                    threat model, demo, worklogs, screenshots, video
 fixtures/                committed quote/arena fixtures
-artifacts/               CP3 testnet arena record (no secrets)
+artifacts/               demo3 testnet arena record (no secrets)
 ```
 
 ---
@@ -178,6 +220,8 @@ artifacts/               CP3 testnet arena record (no secrets)
 - **NorthCinder** — "your shopping agent should work for you"; verifiable neutral ranking by re-execution over *disclosed* inputs, no chain. Its own docs concede that a dishonest service could curate the offer set and then rank honestly over it. Loyal Cart makes the offer set a public contract index and the ranking the payment condition, so the curated-set move cannot close a sale.
 - **CheckMate** — deterministic policy engine, injection-resistant listings, signed purchase plan; the signatures are operator HMACs, so a third party cannot verify them without the operator's key. Loyal Cart's quote and winner are on chain, and the payment contract checks them.
 - **arXiv 2609.11757 / A-VIP** — names the gap "signing the transaction but not the decision." Loyal Cart binds the decision (best-scoring (lowest cost) under the committed policy) to settlement.
+- **Accord** (`Adityaakr/accord`) — the closest hackathon neighbour: sealed tenders, on-chain lowest-price award. Delta: Accord's rule is lowest price; Loyal Cart's is the buyer's committed multi-factor policy, and the checkout refuses a non-winner. Quote #4 is the proof: lowest price would pay #8 at 0.08/120 days; the committed policy paid #9 at 0.10/1 day.
+- **Restock Relay**, **VeilProcure**, **Day One**, **SwarmBid / General Contractor / SwarmShop** — this hackathon's other procurement and bid-selection entries. Restock scores off-chain and says the score never authorizes payment; VeilProcure ranks off-chain and lets the buyer select; Day One constrains *how much* an agent spends; the bid markets let the agent choose. Loyal Cart makes the ranking the payment condition and the contract computes it under a committed policy.
 - **Gebele, Mutzel, Öz & Matthes, *Sealed-Bid Auctions via TEE-Backed Confidential Compute Blockchains* (DeFi '25, DOI 10.1145/3733815.3764043)** — already gates settlement on a best-scoring rule over a committed set. Loyal Cart differs by using a public offer book and a buyer-authored policy, with no TEE. This is why we do not claim "first."
 
 These are prior art. The honest claim is mechanism-level, not novelty-level; see `CLAIMS.md` C13a/C13b and `docs/RELATED-WORK.md`.
@@ -206,7 +250,7 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation.
 - **RPC is external.** Testnet and the RPC are dependencies; a recorded artifact is a recording, not a live run.
 - **1Click is not implemented.** No quote or panel is shown; cut at CP3.
-- **The testnet flow is verified; these are not.** The CP3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the TEE brief and agent key rotation are not implemented. F5's one-live-offer half is done; the refundable storage deposit is not. The build is not byte-reproducible (C12 is ATTESTED).
+- **The testnet flow is verified; these are not.** The demo3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the TEE brief and agent key rotation are not implemented. F5's one-live-offer half is done; the refundable storage deposit is not. The build is not byte-reproducible (C12 is ATTESTED).
 - **The merchants are owner-created subaccounts.** They have distinct accounts and keys, and the winner is not the owner, but they are demo actors created and funded by the owner. The faucet rate-limited top-level creation.
 - **Deploy and deposit tx hashes are not recorded.** The CP3 deploy script captured them only in memory. The code hashes, zero-key state, policy commit and every arena tx are recorded.
 - **Extra offers from failed attempts remain.** Offers for `gpu-hour`, `gpu-hour-cp3` and `gpu-hour-cp3-final` are on testnet but not in the `gpu-hour-cp3-final3` quote. The contract has no retire method.
@@ -215,6 +259,10 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
 
 ---
+
+## Hosting the page
+
+The repo root is static and `vercel.json` redirects `/` to `/packages/web/`. After the repo is public, either import it in Vercel (preset **Other**, no build command, output directory `.`) or run the **pages** GitHub Actions workflow and use `https://mansi0xc.github.io/loyal-cart/`. Do not run the Vercel CLI from a working tree that contains keys; `.vercelignore` excludes `.keys/`, `.env`, `target/` and `node_modules/`. After deployment, replace the `npm run ui` row in the 3-minute check with the live URL.
 
 ## Companion project
 
