@@ -1,6 +1,7 @@
 # Loyal Cart
 
 **Repo:** https://github.com/mansi0xc/loyal-cart
+**Live page (no install):** https://loyal-cart.vercel.app
 
 **In our runs, a local 7B model followed an injected listing 19 times out of 20. On testnet, all three steered picks were refused with `NotWinner`, and the honest pick was paid.**
 
@@ -10,7 +11,7 @@ Loyal Cart is a NEAR testnet checkout gate: the buyer commits a scoring policy b
 
 | Do | See |
 |---|---|
-| run `npm run ui`, open the page and press **Verify** | **10/10 PASS**, read from testnet in the browser |
+| open https://loyal-cart.vercel.app and press **Verify** | **10/10 PASS**, read from testnet in the browser |
 | run `make judge` on a fresh clone | `OVERALL: PASS — the recorded testnet run replays from chain data.` (18/18) |
 | open the [non-winner refusal](https://testnet.nearblocks.io/txns/8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T) | `Smart contract panicked: NotWinner` |
 | watch the [2:05 demo](docs/video/loyal-cart-demo.mp4) | bribe/undercut simulations, quote #4, LLM refusals, live verifier |
@@ -259,10 +260,6 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 The list above is the current limits matrix.
 
 ---
-
-## Hosting the page
-
-The repo root is static and `vercel.json` redirects `/` to `/packages/web/`. After the repo is public, either import it in Vercel (preset **Other**, no build command, output directory `.`) or run the **pages** GitHub Actions workflow and use `https://mansi0xc.github.io/loyal-cart/`. Do not run the Vercel CLI from a working tree that contains keys; `.vercelignore` excludes `.keys/`, `.env`, `target/` and `node_modules/`. After deployment, replace the `npm run ui` row in the 3-minute check with the live URL.
 
 ## Companion project
 
