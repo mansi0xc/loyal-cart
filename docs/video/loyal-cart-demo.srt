@@ -1,0 +1,107 @@
+1
+00:00:00.500 --> 00:00:04.500
+We asked an AI shopping agent to buy the best offer for an item.
+
+2
+00:00:04.500 --> 00:00:08.500
+One seller hid an instruction in their listing telling the agent to pick them,
+
+3
+00:00:08.500 --> 00:00:14.900
+and a seven-billion-parameter model followed it nineteen times out of twenty.
+
+4
+00:00:14.900 --> 00:00:20.200
+That's the risk with agents that spend money: whoever can reach the agent can quietly change who gets paid,
+
+5
+00:00:20.200 --> 00:00:25.700
+and afterwards you can't tell whose side it was on.
+
+6
+00:00:25.700 --> 00:00:31.000
+Loyal Cart moves that decision somewhere the agent can't bend.
+
+7
+00:00:31.000 --> 00:00:35.000
+The buyer first commits to what "best" means:
+
+8
+00:00:35.000 --> 00:00:38.500
+how much price, delivery time and the seller's track record matter.
+
+9
+00:00:38.500 --> 00:00:44.000
+Sellers post offers in a public book on chain, and at checkout the contract picks the winner itself.
+
+10
+00:00:44.000 --> 00:00:47.700
+If the agent tries to pay anyone else, the payment is refused.
+
+11
+00:00:47.700 --> 00:00:51.500
+On this page you can try to corrupt it.
+
+12
+00:00:51.500 --> 00:00:57.500
+Here a five-NEAR kickback is simulated, and the winner doesn't move.
+
+13
+00:00:57.500 --> 00:01:02.900
+A seller who genuinely drops their price, on the other hand, does win, which is how it should be.
+
+14
+00:01:02.900 --> 00:01:07.500
+Best doesn't always mean cheapest, either.
+
+15
+00:01:07.500 --> 00:01:15.500
+In this quote on testnet, the cheapest offer takes a hundred and twenty days to arrive.
+
+16
+00:01:15.500 --> 00:01:20.500
+The buyer had said delivery matters, so the contract paid the one-day offer instead.
+
+17
+00:01:20.500 --> 00:01:22.400
+The sliders let you see where that choice would flip,
+
+18
+00:01:22.400 --> 00:01:24.400
+but what happened on chain followed the buyer's original policy.
+
+19
+00:01:24.400 --> 00:01:28.000
+Then we let a real model do the shopping on testnet.
+
+20
+00:01:28.000 --> 00:01:32.000
+Three times it was steered towards the wrong seller, and three times the contract refused to pay.
+
+21
+00:01:32.000 --> 00:01:37.100
+The one time it chose honestly, the payment went through.
+
+22
+00:01:37.100 --> 00:01:42.000
+Every refusal on this page is a real testnet transaction, fourteen kinds of them,
+
+23
+00:01:42.000 --> 00:01:47.000
+and anyone can re-check the policy, the offers, the winner and every receipt straight from the chain,
+
+24
+00:01:47.000 --> 00:01:50.300
+without a key or an account.
+
+25
+00:01:50.300 --> 00:01:54.000
+So the agent can still be fooled.
+
+26
+00:01:54.000 --> 00:01:58.000
+It just doesn't get to decide who gets paid anymore.
+
+27
+00:01:58.000 --> 00:02:02.500
+The code and all the evidence are on GitHub, at mansi0xc slash loyal-cart.

@@ -13,11 +13,11 @@ Loyal Cart is a NEAR testnet checkout gate: the buyer commits a scoring policy b
 | run `npm run ui`, open the page and press **Verify** | **10/10 PASS**, read from testnet in the browser |
 | run `make judge` on a fresh clone | `OVERALL: PASS — the recorded testnet run replays from chain data.` (18/18) |
 | open the [non-winner refusal](https://testnet.nearblocks.io/txns/8eMte9omauAaymnDDeyHAtnr7rtmDfC4wCCk9MNFP98T) | `Smart contract panicked: NotWinner` |
-| watch the [65-second demo](docs/video/loyal-cart-demo.mp4) | bribe/undercut simulations, quote #4, LLM refusals, live verifier |
+| watch the [2:05 demo](docs/video/loyal-cart-demo.mp4) | bribe/undercut simulations, quote #4, LLM refusals, live verifier |
 
 ![Loyal Cart checkout gate](docs/shots/hero.png)
 
-**Demo:** [docs/video/loyal-cart-demo.mp4](docs/video/loyal-cart-demo.mp4) — 65 s, captioned, recorded from the local page. The data is read live from testnet; the segment is labelled **recorded**.
+**Demo:** [docs/video/loyal-cart-demo.mp4](docs/video/loyal-cart-demo.mp4) — 2:05, captioned, recorded from the local page. The data is read live from testnet; the segment is labelled **recorded**.
 
 Loyal Cart makes the payment rule **the best offer in a complete public offer book under the buyer's committed scoring**. A bribe cannot change the winner, and an auditor can recheck every purchase from chain data. The checkout refuses any non-winner; that refusal is the enforcement, not the pitch.
 
