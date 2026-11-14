@@ -118,7 +118,7 @@ PASS 57/57 steps in 214.3s
 
 ## Notes and limits
 
-- `npm run arena:testnet` (`scripts/testnet/replay.mjs`) replays the **committed CP3 artifact shape**
+- `npm run arena:testnet` (`scripts/testnet/replay.mjs`) replays the **committed artifact shape**
   (7 offers, quotes 2/3). It is not the verifier for a 3-offer run; the keyless check for this run is
   the verifier step at the end of the script (and the `verification` block it records).
 - `sweep()` only moves funds when the agent account holds more than its storage reserve

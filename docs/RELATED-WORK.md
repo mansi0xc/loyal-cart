@@ -1,11 +1,10 @@
 # Loyal Cart — Related Work
 
-**Author:** A3 · **Date:** 2026-11-12 · **Status:** prior-art review for CP1. Feeds `CLAIMS.md` C13.
+**Date:** 2026-11-14 · **Status:** prior-art review. Feeds `CLAIMS.md` C13a.
 
 **Method.** Every project below was read at source on 2026-11-12 — repository READMEs and
 specification files fetched raw, paper abstracts pulled from the arXiv API, product docs from the
-vendor page. The internal summaries in `deepseek_mds/` and `claude_mds/` were treated as leads, not
-as evidence; three of them are corrected below (see §5). Where a claim about another project could
+vendor page. Earlier drafts were treated as leads, not as evidence; three corrections are recorded below (see §5). Where a claim about another project could
 not be confirmed at source, it is marked **[unverified]** rather than repeated.
 
 **Why this document exists.** Loyal Cart's only originality sentence (C13) is a negative existential
@@ -71,7 +70,7 @@ only add stricter rules, never relax yours, and its spec output is limited to fi
 verify." A hashed, versioned purchase plan is produced; approval is bound to that plan's SHA-256 and
 version; "no signed plan, no PayPal order."
 
-**What the signature actually proves.** This is where the internal summaries need correcting. CheckMate
+**What the signature actually proves.** This is where earlier summaries need correcting. CheckMate
 signs with **HMAC** — "approvals, passports and the audit-chain head are HMAC-signed with a key kept
 *outside* the database." HMAC is symmetric. So the signature proves:
 
@@ -143,7 +142,7 @@ policy and no best-scoring (lowest cost) over an on-chain book. Worth noting: ne
 deployment evidence (mainnet, real tx hashes, no access key on the board) and should not be
 caricatured as a mere spend limit.
 
-**Flock** — `github.com/ClaudeOpusPremiumAgent/flock`. Pooled demand → sealed-bid (commit/reveal)
+**Flock** — pooled demand → sealed-bid (commit/reveal)
 reverse auction on NEAR; second-price settlement; a seller that hides an offer loses its bond; the
 browser recomputes every settled round from the revealed offers. **Covers:** auction integrity and
 group-buying protection. **Not Loyal Cart:** single-dimension price competition over one item, no
@@ -164,29 +163,29 @@ a rule anyone can call"; the winner becomes the vendor of a procurement agreemen
 tenders and a public lowest-price award. **Not Loyal Cart:** Accord's rule is lowest price; Loyal Cart's
 rule is the buyer's committed multi-factor policy, and the checkout refuses any non-winner. Quote #4 is
 the proof the two rules differ: a lowest-price rule would have paid #8 at 0.08/120 days; the committed
-policy paid #9 at 0.10/1 day. Recorded from the CP9 scan, 2026-11-14.
+policy paid #9 at 0.10/1 day. Recorded from the 2026-11-14 scan.
 
 **Restock Relay** — `github.com/fawazdevx/restock-relay` (this hackathon). Scores supplier quotes
 55/25/20 on price/delivery/trust in a server policy engine; its README says "the score never
 authorizes a payment." **Covers:** supplier ranking as advice. **Not Loyal Cart:** the opposite design —
-Loyal Cart makes the score the payment condition, enforced on chain. Recorded from the CP9 scan.
+Loyal Cart makes the score the payment condition, enforced on chain. Recorded from the 2026-11-14 scan.
 
 **VeilProcure** — `github.com/Olalekan2345/veilprocure` (this hackathon). The buyer hashes its
 evaluation rules on NEAR, suppliers commit sealed quotes, ranking runs off-chain, and escrow pays the
 supplier the buyer selects. **Covers:** sealed procurement with a committed rule hash. **Not Loyal
 Cart:** the ranking runs off-chain and the buyer still selects; Loyal Cart's contract refuses any offer
-that is not the winner. Recorded from the CP9 scan.
+that is not the winner. Recorded from the 2026-11-14 scan.
 
 **Day One** — `github.com/CoderofVibes/day-one` (this hackathon). A procurement agent buying inside
 on-chain spending limits, with director approval and QC-gated escrow. **Covers:** how much an agent may
 spend and when it may pay. **Not Loyal Cart:** limits and approvals decide *whether* a payment happens;
-Loyal Cart decides *which offer* wins under a committed policy. Recorded from the CP9 scan.
+Loyal Cart decides *which offer* wins under a committed policy. Recorded from the 2026-11-14 scan.
 
 **SwarmBid / General Contractor / SwarmShop** — this hackathon. Agent/bid marketplaces where the agent
 picks the cheapest bid or counters once (SwarmShop pays the cheapest fix that passes tests). **Covers:**
 agent selection of a bid. **Not Loyal Cart:** the choice is the agent's; in Loyal Cart the contract
 recomputes the winner under the committed multi-factor policy and refuses a non-winner. Recorded from
-the CP9 scan.
+the 2026-11-14 scan.
 
 **AP2** — `github.com/google-agentic-commerce/AP2`. Signed mandates as the authorization artifact for
 agent payments. **Covers:** authorization — this payment was authorised for this cart by this user.
@@ -230,16 +229,16 @@ the strongest *mechanism-level* precedent and the real threat to an unqualified 
 
 ---
 
-## 5. Corrections to the internal summaries
+## 5. Corrections to earlier drafts
 
-Recorded here because the lead will otherwise carry them into the README:
+Recorded here because these corrections affect the README:
 
 1. **NorthCinder is buyer-run and local by default, not a deployed service.** "Re-run to verify the
    deployed service" describes only the optional self-hosted remote-engine mode. In local mode there
    is no adversary to verify against. The correct framing is the weaker, more accurate one: NorthCinder
    states that its checks cover "the offers NorthCinder received, not the completeness or truth of a
    store's catalog."
-2. **CheckMate's signatures are HMAC, not asymmetric.** The internal note "proves nothing about the
+2. **CheckMate's signatures are HMAC, not asymmetric.** The earlier note "proves nothing about the
    operator's loyalty" is directionally right but understates the *structural* point: a symmetric key
    means no third party can verify a passport without being able to forge one. That is the cleanest
    single sentence for why CheckMate is not a public proof.
@@ -271,119 +270,8 @@ Recorded here because the lead will otherwise carry them into the README:
 
 ---
 
-## 7. The narrowest defensible claim
+## 7. The claim we make
 
-C13 as currently worded:
+> "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by authorisation credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
 
-> "The first shopping agent whose checkout is gated by an on-chain proof that it chose the best offer
-> under the user's committed scoring, with kickbacks forwarded by contract."
-
-**That sentence does not survive.** Four defects, in order of severity:
-
-1. **"The first"** is a negative existential claim. Nothing in `CLAIMS.md`'s named evidence
-   ("related-work section; prior-art search; Claude review") is an artifact a stranger can reproduce,
-   so C13 can never reach VERIFIED under the ledger's own rule. And the mechanism half of it —
-   *best-scoring (lowest cost) over a committed set gates on-chain release* — is published, peer-reviewed and implemented
-   (DeFi '25, §4 above).
-2. **"On-chain proof"** invites a zero-knowledge reading. What exists is deterministic on-chain
-   computation plus a re-executable verifier. That is genuinely verifiable and worth saying plainly —
-   but it is not a proof, and a judge who expects one will read the word as inflation.
-3. **"The best offer"** is unqualified. Best among the offers that were posted, valid at the quote
-   block, and within the 64-offer cap.
-4. **"The user's committed scoring"** implies the commitment precedes shopping. It does not: the
-   policy and its hash arrive in the same `create_quote` call (see C02 in `CLAIMS-REVIEW.md`). The
-   commitment is *against later change and for auditability*, not *before the offers were seen*.
-
-Also worth stating: at CP1 there is no shopping agent. There is a spec, a fixture and a scripted
-arena. "Shopping agent" is a category the prototype has not yet earned.
-
-**Recommended replacement (L1 — the narrowest claim that the evidence can actually carry):**
-
-> "Loyal Cart is a testnet prototype in which the payment contract will not forward the buyer's funds
-> unless the offer being bought is the best-scoring (lowest cost) offer among every valid offer in a public on-chain offer book,
-> under the scoring policy the quote hash-committed — so a third party can recheck the choice from
-> chain data alone, with no key and no hardware trust — and the agent's own account has no method that
-> can pay the agent or a third party."
-
-Every clause of L1 is backed by a row that a stranger can reproduce: C01/C03 (offer book and
-snapshot), C02 (policy hash), C04/C05 (gate and offer hash), C06 (non-retention), C08 (keyless
-recomputation). No clause requires a search result, so nothing in L1 depends on the negative claim.
-
-**L1 drops "first" entirely.** That is deliberate. The novelty argument belongs in this document and
-in the README's related-work prose, where a citation list carries it and a reader can weigh it. It
-does not belong in a one-sentence claim that one counterexample destroys.
-
----
-
-## 8. Fallback if L1 is challenged
-
-**L2 — challenge: "best-scoring (lowest cost) gates payment is not new; sealed-bid auctions already do it."**
-Concede the mechanism and move the claim to the domain:
-
-> "A shopping checkout in which the offer set is a public contract index rather than a service's own
-> disclosed inputs, so an operator cannot rank honestly over a curated set and still be paid."
-
-This is the sharpest remaining delta against NorthCinder specifically, because NorthCinder's own spec
-names curated inputs as the thing client-side verification cannot catch. It is a claim about where the
-offer set lives and what the payment is bound to — not about inventing best-scoring (lowest cost)-plus-escrow.
-
-**L3 — challenge: "both mechanisms exist separately, the combination is engineering."**
-Concede the combination and drop the comparatives:
-
-> "Prior systems publish a verifiable ranking (NorthCinder, by re-execution over disclosed inputs) or
-> sign the purchase (CheckMate by operator HMAC; AP2 and Mastercard Verifiable Intent by authorisation
-> credential). Loyal Cart makes the ranking the payment condition: the contract refuses any purchase
-> that is not the best-scoring (lowest cost) offer in the on-chain offer book under the committed policy."
-
-L3 makes no originality claim at all. It states a mechanism and names the neighbours it differs from.
-It is unfalsifiable in the way that matters — nothing in it can be shown false — and it is still a
-strong README opener. **This is the safest sentence for the submission form**, where there is no room
-to qualify.
-
-**L4 — challenge: everything.** Then drop originality from user-facing text entirely and describe the
-artifact. `CLAIMS.md` already forbids "world-first", "first ever", "unhackable", "trustless", "secure",
-"production-ready". Adding "first" to that list is a cheap way to remove the whole failure mode.
-
----
-
-## 9. Recommendation to the lead
-
-1. **Replace C13 with L1, and split it in two.** L1's mechanism clauses are testable and belong in a
-   ledger row. The novelty argument belongs in README prose backed by this document, not in a row that
-   can never be verified.
-2. **Add "first" to the banned-words list** unless the lead is willing to defend it against a
-   reviewer holding NorthCinder and DeFi '25. It costs almost nothing to drop and removes the single
-   most attackable word in the project.
-3. **Lead the README with the settlement gate, not with loyalty.** NorthCinder already owns "your
-   agent should work for you" and any loyalty framing reads as a variant of it. "The contract will not
-   pay unless the ranking holds" is a different sentence and it is the one that is actually true.
-4. **State the admission hole before a judge does.** `post_offer` is permissionless in SPEC §6.1, so
-   any merchant can list — that is a real advantage over a curated service and should be said. But a
-   merchant who never posts is still invisible to the quote, and the operator still runs the merchant
-   bots. Nearly the same sentence appears in NorthCinder's own docs; a team that names it reads as
-   rigorous, a team that does not reads as overselling.
-5. **Credit MEV-Share/MEV Blocker** as the ancestor of kickback forwarding. It costs one clause and
-   defuses the "that's just payment for order flow" rebuttal.
-
----
-
-## Sources
-
-All fetched 2026-11-12.
-
-- NorthCinder — <https://github.com/cinderline/northcinder> · README, `docs/RANKING.md`, `docs/TRUST.md`
-- CheckMate — <https://github.com/HadiaIshtiaqq/CheckMate> (README, "Trust and security", "Honest limits")
-- A-VIP — <https://arxiv.org/abs/2609.11757> (abstract via `export.arxiv.org/api/query?id_list=2609.11757`)
-- nearcarta — <https://github.com/nearcarta/nearcarta>
-- Flock — <https://github.com/ClaudeOpusPremiumAgent/flock>
-- CartelBreaker — <https://github.com/KushnerykPavel/cartelbreaker>
-- AP2 — <https://github.com/google-agentic-commerce/AP2>
-- Mastercard Verifiable Intent — <https://www.mastercard.com/us/en/news-and-trends/stories/2026/verifiable-intent.html> · <https://github.com/agent-intent/verifiable-intent>
-- Visa TAP — <https://corporate.visa.com/en/sites/visa-perspectives/newsroom/visa-unveils-trusted-agent-protocol-for-ai-commerce.html>
-- MEV Blocker — <https://docs.mevblocker.io/concepts/how-it-works>
-- Accord — <https://github.com/Adityaakr/accord>
-- Restock Relay — <https://github.com/fawazdevx/restock-relay>
-- VeilProcure — <https://github.com/Olalekan2345/veilprocure>
-- Day One — <https://github.com/CoderofVibes/day-one>
-- SwarmBid — <https://github.com/ykbojak-alt/hivebid>; General Contractor — <https://github.com/teon101/near-general-contractor>; SwarmShop — <https://github.com/mohammedfirdouss/swarmshop>
-- Sealed-bid auctions, DeFi '25 — <https://doi.org/10.1145/3733815.3764043> · <https://arxiv.org/html/2510.19491> · <https://github.com/TimmMu/tee-confidential-auctions>
+That is the user-facing sentence. It is mechanism-level, not a novelty claim, and it matches `CLAIMS.md` C13a.

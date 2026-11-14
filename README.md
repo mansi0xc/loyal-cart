@@ -144,7 +144,7 @@ The four transactions above are the on-chain evidence; `artifacts/llm-onchain.js
 
 ## Final run (`demo3`, 13 Nov 2026)
 
-Fresh accounts, fresh contracts, locked. This is the evidence the page reads and the run to use for judging. The clean deployment record is [`artifacts/demo3-deployments.json`](artifacts/demo3-deployments.json); `deployments.json` is the historical CP3 record.
+Fresh accounts, fresh contracts, locked. This is the evidence the page reads and the run to use for judging. The deployment record is [`artifacts/demo3-deployments.json`](artifacts/demo3-deployments.json).
 
 | Role | Account |
 |---|---|
@@ -179,7 +179,7 @@ node packages/verifier/verify.mjs --rpc https://rpc.testnet.fastnear.com \
 
 ## Agent baseline (honest label)
 
-The arena's baseline is a **scripted naive agent, not an LLM**; the fixture includes its recorded transcript. The security claim does not depend on a model: the contract checks the quote, the hashes and the winner. An optional LLM adapter exists in `packages/agent/agent.mjs` but is **not used** in this build; see `docs/LLM-AGENT.md`. The demo says “scripted baseline — no LLM” on screen.
+The arena's baseline is a **scripted naive agent, not an LLM**; the fixture includes its recorded transcript. The security claim does not depend on a model: the contract checks the quote, the hashes and the winner. An optional LLM adapter exists in `packages/agent/agent.mjs` but is **not used** in this build. The demo says “scripted baseline — no LLM” on screen.
 
 ## Lock check (demo3)
 
@@ -192,7 +192,7 @@ node packages/verifier/lock-check.mjs \
   --expected-code-hash fb94e3eda80522d72f2ea37a9c33276b9997a83c5934b8790d40c0288fbe5f37
 ```
 
-It prints the keys and the wasm hash and fails if a full-access key remains or the hash differs. The AgentAccount stays owner-controlled because the owner is the principal. See `scripts/deploy-testnet.sh` and `deployments.example.json`.
+It prints the keys and the wasm hash and fails if a full-access key remains or the hash differs. The AgentAccount stays owner-controlled because the owner is the principal. See `scripts/deploy-and-demo.mjs` and `deployments.example.json`.
 
 ---
 
@@ -208,7 +208,7 @@ packages/verifier/       dependency-free Node best-scoring (lowest cost) verifie
 packages/arena/          deterministic Bribe Arena
 packages/web/            interactive web page (npm run ui)
 scripts/                 UI server, testnet replay, deploy checklist
-docs/                    threat model, demo, worklogs, screenshots, video
+docs/                    related work, API surface, screenshots, video
 fixtures/                committed quote/arena fixtures
 artifacts/               demo3 testnet arena record (no secrets)
 ```
@@ -249,14 +249,14 @@ These are prior art. The honest claim is mechanism-level, not novelty-level; see
 - **The TEE private brief is not implemented.** No NEAR AI Cloud or OutLayer path ships in this build; the base claim does not require it.
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation.
 - **RPC is external.** Testnet and the RPC are dependencies; a recorded artifact is a recording, not a live run.
-- **1Click is not implemented.** No quote or panel is shown; cut at CP3.
-- **The testnet flow is verified; these are not.** The demo3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the TEE brief and agent key rotation are not implemented. F5's one-live-offer half is done; the refundable storage deposit is not. The build is not byte-reproducible (C12 is ATTESTED).
+- **1Click is not implemented.** No quote or panel is shown.
+- **The testnet flow is verified; these are not.** The demo3 arena is replayed on testnet in `artifacts/arena-testnet.json`. 1Click, the TEE brief and agent key rotation are not implemented. One live offer per (seller, item) is enforced; the refundable storage deposit is not. The build is not byte-reproducible (C12 is ATTESTED).
 - **The merchants are owner-created subaccounts.** They have distinct accounts and keys, and the winner is not the owner, but they are demo actors created and funded by the owner. The faucet rate-limited top-level creation.
-- **Deploy and deposit tx hashes are not recorded.** The CP3 deploy script captured them only in memory. The code hashes, zero-key state, policy commit and every arena tx are recorded.
-- **Extra offers from failed attempts remain.** Offers for `gpu-hour`, `gpu-hour-cp3` and `gpu-hour-cp3-final` are on testnet but not in the `gpu-hour-cp3-final3` quote. The contract has no retire method.
+- **Deploy and deposit tx hashes are not recorded.** The earlier deploy script captured them only in memory. The code hashes, zero-key state, policy commit and every arena tx are recorded.
+- **Extra offers from failed attempts remain.** Offers for earlier `gpu-hour` variants remain on testnet but are not in the current quote. The contract has no retire method.
 - **The baseline is scripted, not an LLM.** The UI and README label it; the security claim does not depend on a model.
 
-The full matrix, with attack ids and test names, is in `docs/THREAT_MODEL.md`.
+The list above is the current limits matrix.
 
 ---
 
@@ -268,9 +268,9 @@ The repo root is static and `vercel.json` redirects `/` to `/packages/web/`. Aft
 
 **Pinned** is the second project: a generation-pinned payment router for rentable names, at https://github.com/mansi0xc/pinned (separate repository). It has its own README, claims ledger and testnet evidence.
 
-## AI tools and libraries
+## Stack
 
-Built during NEAR HACKATHON with Claude and DeepSeek as design/review agents and Command Code as the build environment. Contracts use `near-sdk` 5.30.1; tests use `near-workspaces`; the verifier, arena and server use Node built-ins only. The demo baseline is scripted; `qwen2.5:0.5b` was run locally for the off-chain 20-run measurement, not as the demo agent.
+Contracts use `near-sdk` 5.30.1; tests use `near-workspaces`; the verifier, arena and server use Node built-ins only. The demo baseline is scripted; `qwen2.5:0.5b` was run locally for the off-chain 20-run measurement, not as the demo agent.
 
 ## License
 

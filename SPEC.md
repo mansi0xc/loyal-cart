@@ -1,6 +1,6 @@
-# Loyal Cart — SPEC (CP1 freeze)
+# Loyal Cart — SPEC
 
-**Status:** CP1 spec freeze, 2026-11-12. Nothing in this document is a verified claim unless the claims ledger says VERIFIED. All user-facing claims are PLANNED until CP4.
+**Status:** design and evidence map, 2026-11-14. Nothing in this document is a verified claim unless the claims ledger says VERIFIED.
 **Deadline:** 2026-11-14 23:59 UTC. **Tracks:** business, agents, realworld, open.
 
 ---
@@ -33,7 +33,7 @@
 | **AgentAccount contract** | `agent.<team>.testnet` | hold the user's budget; execute a valid purchase; forward incoming merchant transfers to the owner; sweep its balance to the owner | keep a kickback; send funds to the agent or a third party; create a quote |
 
 **Trust assumptions stated up front:**
-- The OfferBook and CheckoutGate code is deployed once and not upgraded during judging. If the deployer key can upgrade, that key can change the rules; the README says so. CP2 locked the contract account: OfferBook and CheckoutGate have 0 access keys.
+- The OfferBook and CheckoutGate code is deployed once and not upgraded during judging. If the deployer key can upgrade, that key can change the rules; the README says so. The deployed contracts are locked: OfferBook and CheckoutGate have 0 access keys.
 - The NEAR testnet RPC is external; the demo labels every dependency.
 - The optional private brief (TEE) is **not** part of the security claim. If used, it adds a trusted operator (NEAR AI Cloud or OutLayer) plus hardware. The base claim uses the public committed policy.
 
@@ -273,8 +273,6 @@ fn get_balance() -> u128;                             // view
 | 1:25–1:45 | Verifier: `node packages/verifier/verify.mjs --fixture ...` prints PASS; recompute best-scoring (lowest cost) with no wallet | Terminal output + explorer links |
 | 1:45–2:00 | Limits and close: what it does not stop; tracks; repo | "What this does not stop" card |
 
-**Detailed shot list, verbatim narration, labels and fallbacks:** `docs/DEMO.md`.
-
 ---
 
 ## 9. Threat model and "what this does not stop"
@@ -297,12 +295,12 @@ fn get_balance() -> u128;                             // view
 - **Off-chain kickbacks to the operator/developer.** The contract catches on-chain transfers to the agent account; it cannot catch a side payment to the agent's developer.
 - **TEE trust, if the optional private brief is used.** NEAR AI Cloud/OutLayer plus hardware must be trusted; the base claim does not require it.
 - **Upgrade keys.** If the deployer can upgrade the contracts, it can change the rules. The README names the key and the mitigation (lock or multisig).
-- **1Click.** Not implemented. No quote or panel is shown; the CP3 UI says so.
+- **1Click.** Not implemented. No quote or panel is shown; the UI says so.
 - **Offer cap.** `MAX_OFFERS_PER_QUOTE = 64`; the contract panics rather than silently truncating.
 
 ---
 
-## 10. Claims ledger (draft — every row PLANNED at CP1)
+## 10. Claims ledger
 
 See `CLAIMS.md`. Rules:
 - Every factual sentence in README, video, X post and submission form maps to a VERIFIED row, or is explicitly labelled SIMULATED/PLANNED.
@@ -316,7 +314,7 @@ See `CLAIMS.md`. Rules:
 
 ```
 loyal-cart/
-  README.md                  # CP1 draft; labels everything PLANNED
+  README.md                  # project overview and judge path
   SPEC.md                    # this file
   CLAIMS.md                  # claims ledger
   LICENSE                    # MIT
@@ -334,61 +332,15 @@ loyal-cart/
   packages/
     verifier/                # dependency-free Node verifier + tests
     arena/                   # deterministic arena + tests
-    ui/                      # static UI (CP3)
+    ui/                      # static UI
   fixtures/                  # quote.json, arena.json, policy.hash
   docs/
-    THREAT_MODEL.md
-    DEMO.md
-    worklogs/                # one short log per sub-agent
-  scripts/                   # deploy-testnet.sh, e2e-testnet.sh, seed-testnet.mjs
+  scripts/                   # deploy-and-demo, evidence cache, UI server
   .github/workflows/ci.yml
 ```
 
 ---
 
-## 12. Sub-agent plan (CP1)
+## 12. Status
 
-| Agent | Bounded task | Output | Work log |
-|---|---|---|---|
-| **A1 — threat model** | Attack/defense matrix, "what this does not stop", trust assumptions | `docs/THREAT_MODEL.md` | `docs/worklogs/a1-threat-model.md` |
-| **A2 — demo** | 2-minute storyboard, 20-second moment, shot list, narration | `docs/DEMO.md` | `docs/worklogs/a2-demo.md` |
-| **A3 — related work & claims** | Related-work comparison; audit the claims ledger for overclaims | `docs/RELATED-WORK.md`, review notes on `CLAIMS.md` | `docs/worklogs/a3-related-claims.md` |
-| **Lead** | SPEC, contracts skeleton, CI, shared scoring, verifier/arena fixtures | the repo | `deepseek_mds/build/CP1-report.md` |
-
-Every sub-agent works only in its named files. The lead reviews and integrates. Each work log states what was done, what is verified, what is assumed, and any open question.
-
----
-
-## 13. Build plan and checkpoints
-
-| CP | Target | Scope | Cut list if late |
-|---|---|---|---|
-| CP1 | Thu 12 Nov 10:00 IST | Spec, repo skeleton, CI, shared types/scoring, verifier/arena fixtures, claims draft | UI polish, optional TEE, real 1Click |
-| CP2 | Thu 12 Nov 23:00 IST | Deploy OfferBook/CheckoutGate/AgentAccount on testnet; unit + integration tests; one refused checkout tx; one forwarded kickback tx; verifier CLI | retire_offer, quote_hash view, FT kickback |
-| CP3 | Fri 13 Nov 18:00 IST | `npm run arena` naive vs Loyal Cart, three attacks, fixed seed; testnet replay with distinct merchants; UI 20-second moment; 1Click and TEE cut and labelled | real 1Click execution, TEE, seller reputation UI |
-| CP4 | Sat 14 Nov 12:00 IST | README "Do X, see Y"; clean-clone `make verify`; CLAIMS complete; "What this does not stop"; Related work; Claude re-runs screener | extra docs, extra merchants |
-| CP5 | Sat 14 Nov 22:00 IST | 2-min video, X post, form answers, fresh twin check; Mansi submits by Sun 15 Nov 03:00 IST | any non-essential feature |
-
-**Hard rule:** cut scope, never truthfulness. If a claim cannot be verified, mark it SIMULATED/PLANNED or drop it.
-
----
-
-## 14. Open questions for Claude (CP1 review)
-
-1. **AgentAccount vs CheckoutGate authority.** Is the quote's `buyer` the AgentAccount contract (my design), or should the user account be the buyer with a scoped agent key? My design makes the agent unable to create quotes or withdraw, but it adds one cross-contract hop. Evidence: the interface above; the alternative is simpler but gives the agent a key on the user's account.
-2. **Quote snapshot cap.** Is `MAX_OFFERS_PER_QUOTE = 64` acceptable, with a panic rather than truncation? Alternative: paginate quotes. For the demo, 6 offers.
-3. **Payment asset.** Testnet NEAR for v0.1, with a mock NEP-141 adapter as a stretch. Is that sufficient for the realworld track, or should the demo use a mock USDC from day one?
-4. **Upgrade keys.** Lock the contract account after deployment, or keep a deployer key for fixes and document it? Locking is stronger for the claim but risks a stuck demo.
-5. **Claims wording.** Is the narrow claim defensible after the NorthCinder/CheckMate/A-VIP comparison, or should it be narrower ("the first on-chain quote that gates checkout...")?
-6. **Arena testnet vs fixture.** The screener path is the fixture; the demo path is testnet. Is a recorded testnet artifact acceptable if the live testnet is flaky, or must the video show a live run?
-
----
-
-## 15. CP1 definition of done
-
-- [x] This SPEC.md, with interfaces, schemas, scoring, threat model, arena script, storyboard, claims draft, sub-agent plan.
-- [ ] Repo skeleton compiles: `cargo test --workspace` green; `npm test` green; `make verify` runs on a fixture with no wallet.
-- [ ] CI workflow present and runnable (empty/placeholder tests allowed at CP1, but the workspace must build).
-- [ ] `CLAIMS.md` draft with every row PLANNED.
-- [ ] `README.md` draft that labels everything PLANNED and names related work.
-- [ ] CP1 report in `deepseek_mds/build/CP1-report.md`.
+The contracts, verifier, arena, UI and testnet evidence are in this repository. The current evidence run is `demo3`: winner checkout, `NotWinner` refusal, the quote #4 policy trade-off, donate/sweep, 14 refusals plus 2 controls, and a keyless 18/18 replay. Limits are listed in README "What this does not stop".
